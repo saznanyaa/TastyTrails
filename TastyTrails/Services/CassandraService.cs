@@ -43,5 +43,16 @@ namespace TastyTrails.Services
                 r.PopularityScore
             ));
         }
+
+        public async Task InsertUserAsync(CassandraUser u)
+        {
+            var statement = await _session.PrepareAsync("INSERT INTO users (user_id, username, email, role) VALUES (?,?,?,?)");
+            await _session.ExecuteAsync(statement.Bind(
+                u.Id,
+                u.Username,
+                u.Email,
+                u.Role
+            ));
+        }
     }
 }

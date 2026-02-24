@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using TastyTrails.Models;
 using TastyTrails.Services;
 
 namespace TastyTrails.Controllers
@@ -28,6 +29,15 @@ namespace TastyTrails.Controllers
             }
 
             return Ok($"{restaurants.Count} restaurants inserted for {city}.");
+        }
+
+        [HttpPost("PostUser")]
+        public async Task<IActionResult> PostUser(CassandraUser u)
+        {
+            u.Id = Guid.NewGuid();
+            await _cassandra.InsertUserAsync(u);
+
+            return Ok($"User {u.Username} inserted with {u.Id} id.");
         }
     }
 }

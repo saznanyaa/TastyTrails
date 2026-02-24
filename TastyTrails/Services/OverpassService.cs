@@ -31,7 +31,6 @@ namespace TastyTrails.Services
             ";
 
             var content = new StringContent(query);
-            Console.WriteLine(query);
 
             var response = await _httpClient.PostAsync("https://overpass-api.de/api/interpreter", content);
 
