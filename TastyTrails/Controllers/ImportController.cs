@@ -57,5 +57,19 @@ namespace TastyTrails.Controllers
 
             return Ok();
         }
+        
+        //-----------------------------------------------------
+        [HttpPost("users/{userId}/saved/{restaurantId}")]
+        public async Task<IActionResult> PostUserSavedrestaurant(Guid userId, Guid restaurantId)
+        {
+            var saved = new CassandraSavedRestaurants
+            {
+                UserId = userId,
+                RestaurantId = restaurantId,
+                SavedAt = DateTime.Now.ToUniversalTime()
+            };
+            await _cassandra.InsertUserSavedRestaurants(saved);
+            return Ok(saved);
+        }
     }
 }

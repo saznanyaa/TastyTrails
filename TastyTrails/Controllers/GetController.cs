@@ -38,5 +38,13 @@ namespace TastyTrails.Controllers
             var count = await _cassandra.GetRestaurantViewCountAsync(id);
             return Ok(new {RestaurantId = id, ViewCount = count});
         }
+
+        //---------------------------------------------------------------------------
+        [HttpGet("users/{userId}/saved")]
+        public async Task<IActionResult>GetUserSavedRestaurants(Guid userId)
+        {
+            var saved = await _cassandra.GetUserSavedRestaurants(userId);
+            return Ok(saved);
+        }
     }
 }

@@ -103,6 +103,23 @@ namespace TastyTrails.Services
         }
 
         //-----------------------------------------------------------------------------
-        
+        public async Task InsertUserSavedRestaurants(CassandraSavedRestaurants r)
+        {
+            await _mapper.InsertAsync(r);
+        }
+
+        public async Task<List<CassandraSavedRestaurants>> GetUserSavedRestaurants(Guid id)
+        {
+            var query = "WHERE user_id=?";
+            var saved = await _mapper.FetchAsync<CassandraSavedRestaurants>(query, id);
+            return saved.ToList();
+        }
+
+        public async Task DeleteUserSavedRestaurant(Guid userId, Guid restaurantId)
+        {
+            var query = "DELETE FROM user_saved_restaurants WHERE user_id=? AND restaurant_id=?";
+            
+            await _session.ExecuteAsync(new SimpleStatement(query, userId, restaurantId));
+        }
     }
 }
