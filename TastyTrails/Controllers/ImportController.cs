@@ -17,16 +17,17 @@ namespace TastyTrails.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> ImportRestaurants()
+        public async Task<IActionResult> ImportRestaurants(string city)
         {
-            var restaurants = await _overpass.GetRestaurantsAsync();
+            var restaurants = await _overpass.GetRestaurantsAsync(city);
 
             foreach (var restaurant in restaurants)
             {
                 await _cassandra.InsertRestaurantAsync(restaurant);
+                await _cassandra.InsertRestaurantCuisineAsync(restaurant);
             }
 
-            return Ok($"{restaurants.Count} restaurants inserted.");
+            return Ok($"{restaurants.Count} restaurants inserted for {city}.");
         }
     }
 }
