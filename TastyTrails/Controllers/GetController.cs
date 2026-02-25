@@ -131,5 +131,20 @@ namespace TastyTrails.Controllers
             var count = await _cassandra.GetRestaurantRatingsCount(id);
             return Ok(new { RestaurantId = id, RatingsCount = count });
         }
+
+        //---trendinng weekly------------------------------------------------------------------------
+        [HttpGet("restaurants/trending/city")]
+        public async Task<IActionResult> GetTrendingByCityWeekly([FromQuery]string city, [FromQuery]bool today = false)
+        {
+            var trending = await _cassandra.GetTrendingByCity(city, today);
+            return Ok(trending);
+        }
+        [HttpGet("restaurants/trending/citycuisine")]
+        public async Task<IActionResult> GetTrendingByCityCuisineWeekly([FromQuery]string city,[FromQuery]string cuisine, [FromQuery]bool today = false)
+        {
+            var trending = await _cassandra.GetTrendingByCityCuisine(city, cuisine, today);
+            return Ok(trending);
+        }
+
     }
 }
