@@ -90,9 +90,9 @@ namespace TastyTrails.Controllers
         [HttpGet("restaurants/{id}/reviews")]
         public async Task<IActionResult> GetRestaurantReviews(Guid id)
         {
-            var views = await _cassandra.GetRestaurantReview(id);
+            var reviews = await _cassandra.GetRestaurantReview(id);
     
-            return Ok(views);
+            return Ok(reviews);
         }
 
         [HttpGet("restaurants/{id}/reviewsfromto")]
@@ -100,15 +100,40 @@ namespace TastyTrails.Controllers
         {
             to = to.ToUniversalTime();
             ffrom = ffrom.ToUniversalTime();
-            var views = await _cassandra.GetRestaurantReviewsFromTo(id, ffrom, to);
-            return Ok(views);
+            var reviews = await _cassandra.GetRestaurantReviewsFromTo(id, ffrom, to);
+            return Ok(reviews);
         }
 
         [HttpGet("restaurants/{id}/reviewscount")]
         public async Task<IActionResult> GetRestaurantReviewsCount(Guid id)
         {
             var count = await _cassandra.GetRestaurantReviewCount(id);
-            return Ok(new {RestaurantId = id, ViewCount = count});
+            return Ok(new {RestaurantId = id, ReviewCount = count});
+        }
+
+        //---restaurant_checkins------------------------------------------------------------
+        [HttpGet("restaurants/{id}/checkins")]
+        public async Task<IActionResult> GetRestaurantCheckins(Guid id)
+        {
+            var checkins = await _cassandra.GetRestaurantCheckins(id);
+    
+            return Ok(checkins);
+        }
+
+        [HttpGet("restaurants/{id}/checkinsfromto")]
+        public async Task<IActionResult> GetRestaurantCheckinsToFrom(Guid id, [FromQuery]DateTime to, [FromQuery]DateTime ffrom)
+        {
+            to = to.ToUniversalTime();
+            ffrom = ffrom.ToUniversalTime();
+            var checkins = await _cassandra.GetRestaurantCheckinsFromTo(id, ffrom, to);
+            return Ok(checkins);
+        }
+
+        [HttpGet("restaurants/{id}/checkinscount")]
+        public async Task<IActionResult> GetRestaurantCheckinsCount(Guid id)
+        {
+            var count = await _cassandra.GetRestaurantCheckinsCount(id);
+            return Ok(new {RestaurantId = id, CheckinsCount = count});
         }
     }
 }

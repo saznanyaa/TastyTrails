@@ -197,5 +197,48 @@ namespace TastyTrails.Services
             var row = await _session.ExecuteAsync(new SimpleStatement(query, id));
             return row.FirstOrDefault()?.GetValue<long>("count")??0;
         }
+
+        //---restaurant_checkins----------------------------------------------------------
+        public async Task PostRestaurantCheckin(CassandraRestaurantCheckins c)
+        {
+            await _mapper.InsertAsync(c);
+        }
+
+        public async Task<List<CassandraRestaurantCheckins>> GetRestaurantCheckins(Guid id)
+        {
+            var query = "WHERE restaurant_id=?";
+            var checkins = await _mapper.FetchAsync<CassandraRestaurantCheckins>(query, id);
+            return checkins.ToList();
+        }
+
+        public async Task<List<CassandraRestaurantCheckins>> GetRestaurantCheckinsFromTo(Guid id, DateTime from, DateTime to)
+        {
+            var query = @"
+            SELECT * FROM restaurant_checkins
+            WHERE restaurant_id = ?
+            AND checked_in_at >= ? AND checked_in_at <= ?
+            ";
+
+            from = from.ToUniversalTime();
+            to = to.ToUniversalTime();
+            to = to.AddMilliseconds(1);
+            var statement = new SimpleStatement(query, id, from, to);
+            var rows = await _session.ExecuteAsync(statement);
+
+            return rows.Select(r => new CassandraRestaurantCheckins
+            {
+                RestaurantId = r.GetValue<Guid>("restaurant_id"),
+                UserId = r.GetValue<Guid>("user_id"),
+                CheckedInAt = r.GetValue<DateTime>("checked_in_at")
+
+            }).ToList();
+        }
+
+        public async Task<long> GetRestaurantCheckinsCount(Guid id)
+        {
+            var query = "SELECT COUNT(*) FROM restaurant_checkins WHERE restaurant_id=?";
+            var row = await _session.ExecuteAsync(new SimpleStatement(query, id));
+            return row.FirstOrDefault()?.GetValue<long>("count")??0;
+        }
     }
 }

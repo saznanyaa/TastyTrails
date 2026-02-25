@@ -101,5 +101,20 @@ namespace TastyTrails.Controllers
             await _cassandra.PostRestaurantReview(review);
             return Ok(review);
         }
+
+        //---restaurant_checkins-----------------------------------------------------
+        [HttpPost("restaurants/{id}/chekin")]
+        public async Task<IActionResult> PostRestaurantCheckin(Guid id, [FromQuery]Guid userId)
+        {
+            var checkin = new CassandraRestaurantCheckins
+            {
+                RestaurantId = id,
+                UserId = userId,
+                CheckedInAt = DateTime.Now.ToUniversalTime()
+            };
+            await _cassandra.PostRestaurantCheckin(checkin);
+            return Ok(checkin);
+        }
+
     }
 }
