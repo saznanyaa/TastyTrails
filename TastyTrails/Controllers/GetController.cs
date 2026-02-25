@@ -63,29 +63,6 @@ namespace TastyTrails.Controllers
             return Ok(ratings);
         }
 
-        [HttpGet("restaurants/{id}/rating/average")]
-        public async Task<IActionResult> GetAverageRestaurantRating(Guid id)
-        {
-            var ratings = await _cassandra.GetRestaurantRatings(id);
-
-            var avg = 0;
-            var i = 0;
-            foreach(var r in ratings)
-            {
-                avg += r.RatingValue;
-                i+=1;
-            }
-            avg /= i;
-            return Ok(avg);
-        }
-
-        [HttpGet("restaurants/{id}/ratingscount")]
-        public async Task<IActionResult> GetRestaurantsRatingsCount(Guid id)
-        {
-            var count = await _cassandra.GetRestaurantRatingsCount(id);
-            return Ok(new {RestaurantId = id, RatingsCount = count});
-        }
-
         //---restaurant_review_events-------------------------------------------------------------------------
         [HttpGet("restaurants/{id}/reviews")]
         public async Task<IActionResult> GetRestaurantReviews(Guid id)
@@ -134,6 +111,25 @@ namespace TastyTrails.Controllers
         {
             var count = await _cassandra.GetRestaurantCheckinsCount(id);
             return Ok(new {RestaurantId = id, CheckinsCount = count});
+        }
+
+        //---restaurant_rating_summary-------------------------------------------------------
+        [HttpGet("restaurants/{id}/rating/average")]
+        public async Task<IActionResult> GetAverageRestaurantRating(Guid id)
+        {
+            var avg = await _cassandra.GetAverageRating(id);
+
+            if (avg == null)
+                return Ok(0);
+
+            return Ok(avg);
+        }
+
+        [HttpGet("restaurants/{id}/ratingscount")]
+        public async Task<IActionResult> GetRestaurantsRatingsCount(Guid id)
+        {
+            var count = await _cassandra.GetRestaurantRatingsCount(id);
+            return Ok(new { RestaurantId = id, RatingsCount = count });
         }
     }
 }
