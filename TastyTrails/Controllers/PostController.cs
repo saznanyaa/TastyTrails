@@ -6,12 +6,12 @@ namespace TastyTrails.Controllers
 {
     [ApiController]
     [Route("api/post")]
-    public class ImportController : ControllerBase
+    public class PostController : ControllerBase
     {
         private readonly OverpassService _overpass;
         private readonly CassandraService _cassandra;
 
-        public ImportController()
+        public PostController()
         {
             _overpass = new OverpassService();
             _cassandra = new CassandraService();
@@ -48,7 +48,7 @@ namespace TastyTrails.Controllers
             {
                 RestaurantId = id,
                 UserId = userId,
-                ViewedAt = DateTime.UtcNow
+                ViewedAt = DateTime.Now.ToUniversalTime()
             };
 
             await _cassandra.InsertRestaurantView(view);
@@ -86,6 +86,20 @@ namespace TastyTrails.Controllers
             };
             await _cassandra.PostRestaurantRating(rating);
             return Ok(rating);
+        }
+
+        //----------------------------------------------------------------------------
+        [HttpPost("restaurants/{id}/review")]
+        public async Task<IActionResult> PostRestaurantReview(Guid id, [FromQuery]Guid userId)
+        {
+            var review = new CassandraRestaurantReview
+            {
+                RestaurantId = id,
+                UserId = userId,
+                ReviewedAt = DateTime.Now.ToUniversalTime()
+            };
+            await _cassandra.PostRestaurantReview(review);
+            return Ok(review);
         }
     }
 }

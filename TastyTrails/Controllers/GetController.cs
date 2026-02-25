@@ -15,6 +15,7 @@ namespace TastyTrails.Controllers
             _cassandra = new CassandraService();
         }
 
+        //---restaurant_views------------------------------------------------------------
         [HttpGet("restaurants/{id}/views")]
         public async Task<IActionResult> GetRestaurantViews(Guid id)
         {
@@ -39,7 +40,7 @@ namespace TastyTrails.Controllers
             return Ok(new {RestaurantId = id, ViewCount = count});
         }
 
-        //---------------------------------------------------------------------------
+        //---user_saved_restaurants------------------------------------------------------------------------
         [HttpGet("users/{userId}/saved")]
         public async Task<IActionResult>GetUserSavedRestaurants(Guid userId)
         {
@@ -47,7 +48,7 @@ namespace TastyTrails.Controllers
             return Ok(saved);
         }
 
-        //------------------------------------------------------------------------------
+        //---restaurant_ratings---------------------------------------------------------------------------
         [HttpGet("restaurants/{id}/ratings")]
         public async Task<IActionResult> GetRestaurantRatings(Guid id)
         {
@@ -74,7 +75,7 @@ namespace TastyTrails.Controllers
                 avg += r.RatingValue;
                 i+=1;
             }
-            avg = avg/i;
+            avg /= i;
             return Ok(avg);
         }
 
@@ -83,6 +84,31 @@ namespace TastyTrails.Controllers
         {
             var count = await _cassandra.GetRestaurantRatingsCount(id);
             return Ok(new {RestaurantId = id, RatingsCount = count});
+        }
+
+        //---restaurant_review_events-------------------------------------------------------------------------
+        [HttpGet("restaurants/{id}/reviews")]
+        public async Task<IActionResult> GetRestaurantReviews(Guid id)
+        {
+            var views = await _cassandra.GetRestaurantReview(id);
+    
+            return Ok(views);
+        }
+
+        [HttpGet("restaurants/{id}/reviewsfromto")]
+        public async Task<IActionResult> GetRestaurantReviewsToFrom(Guid id, [FromQuery]DateTime to, [FromQuery]DateTime ffrom)
+        {
+            to = to.ToUniversalTime();
+            ffrom = ffrom.ToUniversalTime();
+            var views = await _cassandra.GetRestaurantReviewsFromTo(id, ffrom, to);
+            return Ok(views);
+        }
+
+        [HttpGet("restaurants/{id}/reviewscount")]
+        public async Task<IActionResult> GetRestaurantReviewsCount(Guid id)
+        {
+            var count = await _cassandra.GetRestaurantReviewCount(id);
+            return Ok(new {RestaurantId = id, ViewCount = count});
         }
     }
 }

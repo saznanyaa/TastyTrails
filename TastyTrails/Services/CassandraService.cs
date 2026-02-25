@@ -154,5 +154,48 @@ namespace TastyTrails.Services
             var row = await _session.ExecuteAsync(new SimpleStatement(query, id));
             return row.FirstOrDefault()?.GetValue<long>("count")??0;
         }
+
+        //-------------------------------------------------------------------------------
+        public async Task PostRestaurantReview(CassandraRestaurantReview r)
+        {
+            await _mapper.InsertAsync(r);
+        }
+
+        public async Task<List<CassandraRestaurantReview>> GetRestaurantReview(Guid id)
+        {
+            var query = "WHERE restaurant_id=?";
+            var reviews = await _mapper.FetchAsync<CassandraRestaurantReview>(query, id);
+            return reviews.ToList();
+        }
+
+        public async Task<List<CassandraRestaurantReview>> GetRestaurantReviewsFromTo(Guid id, DateTime from, DateTime to)
+        {
+            var query = @"
+            SELECT * FROM restaurant_review_events
+            WHERE restaurant_id = ?
+            AND reviewed_at >= ? AND reviewed_at <= ?
+            ";
+
+            from = from.ToUniversalTime();
+            to = to.ToUniversalTime();
+            to = to.AddMilliseconds(1);
+            var statement = new SimpleStatement(query, id, from, to);
+            var rows = await _session.ExecuteAsync(statement);
+
+            return rows.Select(r => new CassandraRestaurantReview
+            {
+                RestaurantId = r.GetValue<Guid>("restaurant_id"),
+                UserId = r.GetValue<Guid>("user_id"),
+                ReviewedAt = r.GetValue<DateTime>("reviewed_at")
+
+            }).ToList();
+        }
+
+        public async Task<long> GetRestaurantReviewCount(Guid id)
+        {
+            var query = "SELECT COUNT(*) FROM restaurant_review_events WHERE restaurant_id=?";
+            var row = await _session.ExecuteAsync(new SimpleStatement(query, id));
+            return row.FirstOrDefault()?.GetValue<long>("count")??0;
+        }
     }
 }
