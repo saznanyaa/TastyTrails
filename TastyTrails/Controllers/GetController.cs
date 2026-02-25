@@ -46,5 +46,43 @@ namespace TastyTrails.Controllers
             var saved = await _cassandra.GetUserSavedRestaurants(userId);
             return Ok(saved);
         }
+
+        //------------------------------------------------------------------------------
+        [HttpGet("restaurants/{id}/ratings")]
+        public async Task<IActionResult> GetRestaurantRatings(Guid id)
+        {
+            var ratings = await _cassandra.GetRestaurantRatings(id);
+            return Ok(ratings);
+        }
+
+        [HttpGet("restaurants/{id}/ratings/user/{userId}")]
+        public async Task<IActionResult> GetRestaurantRatingsByUser(Guid id, Guid userId)
+        {
+            var ratings = await _cassandra.GetRestaurantRatingsByUser(id, userId);
+            return Ok(ratings);
+        }
+
+        [HttpGet("restaurants/{id}/rating/average")]
+        public async Task<IActionResult> GetAverageRestaurantRating(Guid id)
+        {
+            var ratings = await _cassandra.GetRestaurantRatings(id);
+
+            var avg = 0;
+            var i = 0;
+            foreach(var r in ratings)
+            {
+                avg += r.RatingValue;
+                i+=1;
+            }
+            avg = avg/i;
+            return Ok(avg);
+        }
+
+        [HttpGet("restaurants/{id}/ratingscount")]
+        public async Task<IActionResult> GetRestaurantsRatingsCount(Guid id)
+        {
+            var count = await _cassandra.GetRestaurantRatingsCount(id);
+            return Ok(new {RestaurantId = id, RatingsCount = count});
+        }
     }
 }

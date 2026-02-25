@@ -121,5 +121,38 @@ namespace TastyTrails.Services
             
             await _session.ExecuteAsync(new SimpleStatement(query, userId, restaurantId));
         }
+
+        //----------------------------------------------------------------------------
+        public async Task PostRestaurantRating(CassandraRestaurantRatings r)
+        {
+            await _mapper.InsertAsync(r);
+        }
+
+        public async Task EditRestaurantRating(Guid restaurantId, Guid userId, int value)
+        {
+            var query = @"INSERT INTO restaurant_ratings(restaurant_id, user_id, rating_value) VALUES (?,?,?)";
+            await _session.ExecuteAsync(new SimpleStatement(query, restaurantId, userId, value));
+        }
+
+        public async Task<List<CassandraRestaurantRatings>> GetRestaurantRatings(Guid id)
+        {
+            var query = "WHERE restaurant_id=?";
+            var ratings = await _mapper.FetchAsync<CassandraRestaurantRatings>(query, id);
+            return ratings.ToList();
+        }
+
+        public async Task<List<CassandraRestaurantRatings>> GetRestaurantRatingsByUser(Guid rId, Guid uId)
+        {
+            var query = "WHERE restaurant_id = ? and user_id = ?";
+            var ratings = await _mapper.FetchAsync<CassandraRestaurantRatings>(query, rId, uId);
+            return ratings.ToList();
+        }
+
+        public async Task<long> GetRestaurantRatingsCount(Guid id)
+        {
+            var query = "SELECT COUNT(*) FROM restaurant_ratings WHERE restaurant_id=?";
+            var row = await _session.ExecuteAsync(new SimpleStatement(query, id));
+            return row.FirstOrDefault()?.GetValue<long>("count")??0;
+        }
     }
 }

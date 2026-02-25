@@ -71,5 +71,21 @@ namespace TastyTrails.Controllers
             await _cassandra.InsertUserSavedRestaurants(saved);
             return Ok(saved);
         }
+
+        //----------------------------------------------------------------------------
+        [HttpPost("restaurants/{id}/rating")]
+        public async Task<IActionResult> PostRestaurantRating(Guid id, [FromQuery]Guid userId, [FromQuery]int value)
+        {
+            if(value<1 || value>5)
+                return BadRequest("Incorrect rating value!");
+            var rating = new CassandraRestaurantRatings
+            {
+                RestaurantId = id,
+                UserId = userId,
+                RatingValue = value
+            };
+            await _cassandra.PostRestaurantRating(rating);
+            return Ok(rating);
+        }
     }
 }
