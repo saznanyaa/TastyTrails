@@ -32,7 +32,10 @@ namespace TastyTrails.Controllers
                 {
                     Id = restaurant.Id,
                     City = restaurant.City,
-                    Cuisine = restaurant.Cuisine
+                    Cuisine = restaurant.Cuisine,
+                    Name = restaurant.Name,
+                    Latitude = restaurant.Latitude,
+                    Longitude = restaurant.Longitude
                 };
                 await _cassandra.InsertRestaurantLookup(lookup);
             }

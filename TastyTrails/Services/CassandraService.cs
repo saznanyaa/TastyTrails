@@ -11,6 +11,15 @@ namespace TastyTrails.Services
         private readonly Cassandra.ISession _session;
         private readonly IMapper _mapper;
 
+        public struct RestaurantMeta
+        {
+            public Guid Id { get; init; }
+            public string Name { get; init; }
+            public string Cuisine { get; init; }
+            public double Latitude { get; init; }
+            public double Longitude { get; init; }
+        }
+
         public CassandraService()
         {
             var cluster = Cluster.Builder()
@@ -65,8 +74,8 @@ namespace TastyTrails.Services
         public async Task InsertRestaurantView(CassandraRestaurantView view)
         {
             await _mapper.InsertAsync(view);
-            var (city, cuisine) = await GetCityAndCuisine(view.RestaurantId);
-            await IncreaseTrending(city, cuisine, view.RestaurantId);
+            var data = await GetCityAndCuisine(view.RestaurantId);
+            await IncreaseTrending(data.City, data.Cuisine, view.RestaurantId);
         }
 
         public async Task<List<CassandraRestaurantView>> GetRestaurantViewsAsync(Guid id)
@@ -110,8 +119,8 @@ namespace TastyTrails.Services
         public async Task InsertUserSavedRestaurants(CassandraSavedRestaurants r)
         {
             await _mapper.InsertAsync(r);
-            var (city, cuisine) = await GetCityAndCuisine(r.RestaurantId);
-            await IncreaseTrending(city, cuisine, r.RestaurantId);
+            var data = await GetCityAndCuisine(r.RestaurantId);
+            await IncreaseTrending(data.City, data.Cuisine, r.RestaurantId);
         }
 
         public async Task<List<CassandraSavedRestaurants>> GetUserSavedRestaurants(Guid id)
@@ -138,8 +147,8 @@ namespace TastyTrails.Services
                 SET rating_sum = rating_sum + ?, rating_count = rating_count + 1
                 WHERE restaurant_id = ?";
             await _session.ExecuteAsync(new SimpleStatement(updateQuery, (long)rating_value, restaurantId));
-            var (city, cuisine) = await GetCityAndCuisine(restaurantId);
-            await IncreaseTrending(city, cuisine, restaurantId);
+            var data = await GetCityAndCuisine(restaurantId);
+            await IncreaseTrending(data.City, data.Cuisine, restaurantId);
         }
 
         public async Task EditRestaurantRating(Guid restaurantId, Guid userId, int newValue)
@@ -208,8 +217,8 @@ namespace TastyTrails.Services
         public async Task PostRestaurantReview(CassandraRestaurantReview r)
         {
             await _mapper.InsertAsync(r);
-            var (city, cuisine) = await GetCityAndCuisine(r.RestaurantId);
-            await IncreaseTrending(city, cuisine, r.RestaurantId);
+            var data = await GetCityAndCuisine(r.RestaurantId);
+            await IncreaseTrending(data.City, data.Cuisine, r.RestaurantId);
         }
 
         public async Task<List<CassandraRestaurantReview>> GetRestaurantReview(Guid id)
@@ -253,8 +262,8 @@ namespace TastyTrails.Services
         public async Task PostRestaurantCheckin(CassandraRestaurantCheckins c)
         {
             await _mapper.InsertAsync(c);
-            var (city, cuisine) = await GetCityAndCuisine(c.RestaurantId);
-            await IncreaseTrending(city, cuisine, c.RestaurantId);
+            var data = await GetCityAndCuisine(c.RestaurantId);
+            await IncreaseTrending(data.City, data.Cuisine, c.RestaurantId);
             
         }
 
@@ -355,15 +364,92 @@ namespace TastyTrails.Services
 
         public async Task InsertRestaurantLookup(RestaurantLookup lookup)
         {
-            var query = @"INSERT INTO restaurant_lookup (id, city, cuisine) VALUES (?, ?, ?);";
+            var query = @"INSERT INTO restaurant_lookup (id, city, cuisine, name, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?);";
 
-            await _session.ExecuteAsync(new SimpleStatement(query, lookup.Id, lookup.City, lookup.Cuisine));
+            await _session.ExecuteAsync(new SimpleStatement(query, lookup.Id, lookup.City, lookup.Cuisine, lookup.Name, lookup.Latitude, lookup.Longitude));
         }
 
-        public async Task<(string City, string Cuisine)> GetCityAndCuisine(Guid id)
+        //---trending_results----------------------------------------------------------------------
+        public async Task FillWeeklyTrendingResults(string city, string cuisine, DateTime weekStart)
+        {
+            var q1 = @"SELECT id FROM restaurants_by_city_and_cuisine WHERE city = ? and cuisine = ?";
+            var rIdsRes = await _session.ExecuteAsync(new SimpleStatement(q1, city, cuisine));
+
+            var rIds = rIdsRes.Select(r => r.GetValue<Guid>("id")).ToList();
+
+            if(!rIds.Any()) return;
+
+            var restaurantMetadata = new Dictionary<Guid, RestaurantMeta>();
+            var scoreList = new List<(RestaurantMeta Meta, int Score)>();
+
+            var weekStartUtc = weekStart.ToUniversalTime();
+
+            foreach(var r in rIds)
+            {
+                var q3 = @"SELECT id, name, cuisine, latitude, longitude 
+                    FROM restaurant_lookup WHERE id = ?";
+                var row = (await _session.ExecuteAsync(new SimpleStatement(q3, r))).FirstOrDefault();
+                if(row != null)
+                {
+                    var meta = new RestaurantMeta
+                    {
+                        Id = row.GetValue<Guid>("id"),
+                        Name = row.GetValue<string>("name"),
+                        Cuisine = row.GetValue<string>("cuisine"),
+                        Latitude = row.GetValue<double>("latitude"),
+                        Longitude = row.GetValue<double>("longitude")
+                    };
+                    restaurantMetadata[r] = meta;
+
+                    var q2 = @"SELECT score FROM trending_by_city_weekly WHERE
+                        city = ? AND week_start = ? AND restaurant_id = ?";
+
+                    var row1 = await _session.ExecuteAsync(new SimpleStatement(q2, city, weekStartUtc, r));
+
+                    var score = row1.FirstOrDefault();
+                    if(score != null)
+                    {
+                        long scoreLong = score.GetValue<long>("score");
+                        int scoreInt = checked((int)scoreLong);
+                        scoreList.Add((meta, scoreInt));
+                    }
+                }
+            }
+            if(!scoreList.Any()) return;
+            
+            var sortedScores = scoreList.OrderByDescending(x => x.Score).ToList();
+
+            int rank = 1;
+            foreach(var s in sortedScores)
+            {
+
+                var q4 = @"INSERT INTO trending_results_by_city_weekly
+                    (city, week_start, rank, restaurant_id, name, cuisine, latitude, longitude, score)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                var q5 = @"INSERT INTO trending_results_by_city_cuisine_weekly
+                    (city, week_start, rank, restaurant_id, name, cuisine, latitude, longitude, score)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                await _session.ExecuteAsync(new SimpleStatement(q4, city, weekStartUtc, rank, s.Meta.Id, s.Meta.Name, s.Meta.Cuisine, s.Meta.Latitude, s.Meta.Longitude, s.Score));
+                await _session.ExecuteAsync(new SimpleStatement(q5, city, weekStartUtc, rank, s.Meta.Id, s.Meta.Name, s.Meta.Cuisine, s.Meta.Latitude, s.Meta.Longitude, s.Score));
+                rank++;
+            }
+        }
+
+        public async Task DeleteTrendingWeeklyResults(string city, string cuisine, DateTime weekStart)
+        {
+            var q1 = @"DELETE FROM trending_results_by_city_weekly WHERE city = ? AND week_start = ?";
+            var q2 = @"DELETE FROM trending_results_by_city_cuisine_weekly WHERE city = ? AND cuisine = ? AND week_start = ?";
+
+            await _session.ExecuteAsync(new SimpleStatement(q1, city, weekStart));
+            await _session.ExecuteAsync(new SimpleStatement(q2, city, cuisine, weekStart));
+        }
+
+        //---helpers-------------------------------------------------------------------------------
+
+        public async Task<RestaurantLookup> GetCityAndCuisine(Guid id)
         {
             var query = @"
-                SELECT city, cuisine
+                SELECT city, cuisine, name, latitude, longitude
                 FROM restaurant_lookup
                 WHERE id = ?;";
 
@@ -374,10 +460,15 @@ namespace TastyTrails.Services
             if (row == null)
                 throw new Exception($"Restaurant {id} not found in lookup table.");
 
-            var city = row.GetValue<string>("city");
-            var cuisine = row.GetValue<string>("cuisine");
-
-            return (city, cuisine);
+            return new RestaurantLookup
+            {
+                Id = id,
+                City = row.GetValue<string>("city"),
+                Cuisine = row.GetValue<string>("cuisine"),
+                Name = row.GetValue<string>("name"),
+                Latitude = row.GetValue<double>("latitude"),
+                Longitude = row.GetValue<double>("longitude")
+            };
         }
     }
 }
