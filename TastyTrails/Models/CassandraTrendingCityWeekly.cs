@@ -1,21 +1,19 @@
 using Cassandra.Mapping.Attributes;
 namespace TastyTrails.Models
 {
-    [Table("trending_by_city_cuisine_weekly")]
-    public class CassandraTrendingByCityCuisineWeekly
+    [Table("trending_by_city_weekly")]
+    public class CassandraTrendingCityWeekly
     {
         [PartitionKey(0)]
+        [Column("city")]
         public string? City { get; set; }
-
         [PartitionKey(1)]
-        public string? Cuisine { get; set; }
-
-        [PartitionKey(2)]
+        [Column("week_start")]
         public DateTime WeekStart { get; set; }
-
         [ClusteringKey]
+        [Column("restaurant_id")]
         public Guid RestaurantId { get; set; }
-
+        [Column("score")]
         public long Score { get; set; }
     }
 }

@@ -65,6 +65,8 @@ namespace TastyTrails.Services
         public async Task InsertRestaurantView(CassandraRestaurantView view)
         {
             await _mapper.InsertAsync(view);
+            var (city, cuisine) = await GetCityAndCuisine(view.RestaurantId);
+            await IncreaseTrending(city, cuisine, view.RestaurantId);
         }
 
         public async Task<List<CassandraRestaurantView>> GetRestaurantViewsAsync(Guid id)
@@ -108,6 +110,8 @@ namespace TastyTrails.Services
         public async Task InsertUserSavedRestaurants(CassandraSavedRestaurants r)
         {
             await _mapper.InsertAsync(r);
+            var (city, cuisine) = await GetCityAndCuisine(r.RestaurantId);
+            await IncreaseTrending(city, cuisine, r.RestaurantId);
         }
 
         public async Task<List<CassandraSavedRestaurants>> GetUserSavedRestaurants(Guid id)
@@ -134,6 +138,8 @@ namespace TastyTrails.Services
                 SET rating_sum = rating_sum + ?, rating_count = rating_count + 1
                 WHERE restaurant_id = ?";
             await _session.ExecuteAsync(new SimpleStatement(updateQuery, (long)rating_value, restaurantId));
+            var (city, cuisine) = await GetCityAndCuisine(restaurantId);
+            await IncreaseTrending(city, cuisine, restaurantId);
         }
 
         public async Task EditRestaurantRating(Guid restaurantId, Guid userId, int newValue)
@@ -203,7 +209,7 @@ namespace TastyTrails.Services
         {
             await _mapper.InsertAsync(r);
             var (city, cuisine) = await GetCityAndCuisine(r.RestaurantId);
-            await IncrementTrendingScore(r.RestaurantId, city, cuisine, r.ReviewedAt);
+            await IncreaseTrending(city, cuisine, r.RestaurantId);
         }
 
         public async Task<List<CassandraRestaurantReview>> GetRestaurantReview(Guid id)
@@ -248,7 +254,8 @@ namespace TastyTrails.Services
         {
             await _mapper.InsertAsync(c);
             var (city, cuisine) = await GetCityAndCuisine(c.RestaurantId);
-            await IncrementTrendingScore(c.RestaurantId, city, cuisine, c.CheckedInAt);
+            await IncreaseTrending(city, cuisine, c.RestaurantId);
+            
         }
 
         public async Task<List<CassandraRestaurantCheckins>> GetRestaurantCheckins(Guid id)
@@ -322,62 +329,55 @@ namespace TastyTrails.Services
             return (double)summary.RatingSum / summary.RatingCount;
         }
 
-        //---trending_by_city_weekly
-        public async Task IncrementTrendingScore(Guid restaurantId, string city, string cuisine, DateTime date)
+        //---trending_weekly-------------------------------------------------------------------
+        public async Task IncreaseTrending(string city, string cuisine, Guid restaurantId)
         {
-            var weekStart = date.Date.AddDays(-(int)date.DayOfWeek);
+            var now = DateTime.UtcNow;
+            var diff = (7+(now.DayOfWeek - DayOfWeek.Monday))%7;
+            var weekStart = now.Date.AddDays(-diff);
 
-            var cityQuery = @"UPDATE trending_by_city_weekly 
-                            SET score = score + 1 
-                            WHERE city = ? AND week_start = ? AND restaurant_id = ?";
-            await _session.ExecuteAsync(new SimpleStatement(cityQuery, city, weekStart, restaurantId));
+            var query1 = @"UPDATE trending_by_city_weekly
+                SET score = score + 1
+                WHERE city = ?
+                AND week_start = ?
+                AND restaurant_id = ?";
 
-            var cuisineQuery = @"UPDATE trending_by_city_cuisine_weekly
-                                SET score = score + 1
-                                WHERE city = ? AND cuisine = ? AND week_start = ? AND restaurant_id = ?";
-            await _session.ExecuteAsync(new SimpleStatement(cuisineQuery, city, cuisine, weekStart, restaurantId));
+            var query2 = @"UPDATE trending_by_city_cuisine_weekly
+                SET score = score + 1
+                WHERE city = ?
+                AND cuisine = ?
+                AND week_start = ?
+                AND restaurant_id = ?";
+            
+            await _session.ExecuteAsync(new SimpleStatement(query1, city, weekStart, restaurantId));
+            await _session.ExecuteAsync(new SimpleStatement(query2, city, cuisine, weekStart, restaurantId));
         }
 
-        public async Task<List<CassandraTrendingByCityWeekly>> GetTrendingByCity(string city, bool today = false)
+        public async Task InsertRestaurantLookup(RestaurantLookup lookup)
         {
-            DateTime weekStart;
+            var query = @"INSERT INTO restaurant_lookup (id, city, cuisine) VALUES (?, ?, ?);";
 
-            if (today)
-                weekStart = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
-            else
-                weekStart = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
-
-            var query = "SELECT * FROM trending_by_city_weekly WHERE city = ? AND week_start = ?";
-            var rows = await _mapper.FetchAsync<CassandraTrendingByCityWeekly>(query, city, weekStart);
-
-            return rows.OrderByDescending(r => r.Score).Take(20).ToList();
+            await _session.ExecuteAsync(new SimpleStatement(query, lookup.Id, lookup.City, lookup.Cuisine));
         }
 
-        public async Task<List<CassandraTrendingByCityCuisineWeekly>> GetTrendingByCityCuisine(string city, string cuisine, bool today = false)
+        public async Task<(string City, string Cuisine)> GetCityAndCuisine(Guid id)
         {
-            DateTime weekStart;
+            var query = @"
+                SELECT city, cuisine
+                FROM restaurant_lookup
+                WHERE id = ?;";
 
-            if (today)
-                weekStart = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
-            else
-                weekStart = DateTime.UtcNow.Date.AddDays(-(int)DateTime.UtcNow.DayOfWeek);
+            var result = await _session.ExecuteAsync(new SimpleStatement(query, id));
 
-            var query = "SELECT * FROM trending_by_city_cuisine_weekly WHERE city = ? AND cuisine = ? AND week_start = ?";
-            var rows = await _mapper.FetchAsync<CassandraTrendingByCityCuisineWeekly>(query, city, cuisine, weekStart);
+            var row = result.FirstOrDefault();
 
-            return rows.OrderByDescending(r => r.Score).Take(20).ToList();
-        }
+            if (row == null)
+                throw new Exception($"Restaurant {id} not found in lookup table.");
 
-        public async Task<(string City, string Cuisine)> GetCityAndCuisine(Guid restaurantId)
-        {
-            var query = "SELECT city, cuisine FROM restaurants_by_city_and_cuisine WHERE id=?";
-            var row = await _session.ExecuteAsync(new SimpleStatement(query, restaurantId));
+            var city = row.GetValue<string>("city");
+            var cuisine = row.GetValue<string>("cuisine");
 
-            var first = row.FirstOrDefault();
-            if(first == null)
-                throw new Exception($"No restaurant with id: {restaurantId}");
-
-            return(City: first.GetValue<string>("city"), Cuisine: first.GetValue<string>("cuisine"));
+            return (city, cuisine);
         }
     }
 }

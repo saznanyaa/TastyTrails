@@ -27,6 +27,14 @@ namespace TastyTrails.Controllers
             {
                 await _cassandra.InsertRestaurantAsync(restaurant);
                 await _cassandra.InsertRestaurantCuisineAsync(restaurant);
+
+                var lookup = new RestaurantLookup
+                {
+                    Id = restaurant.Id,
+                    City = restaurant.City,
+                    Cuisine = restaurant.Cuisine
+                };
+                await _cassandra.InsertRestaurantLookup(lookup);
             }
 
             return Ok($"{restaurants.Count} restaurants inserted for {city}.");
