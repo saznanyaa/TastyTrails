@@ -1,3 +1,6 @@
+using TastyTrails.Configurations;
+using TastyTrails.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
@@ -7,6 +10,10 @@ builder.Services.AddControllers();
 //builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
+
+builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("MongoSettings"));
+
+builder.Services.AddSingleton<MongoService>();
 
 var app = builder.Build();
 
