@@ -158,10 +158,17 @@ namespace TastyTrails.Controllers
             return Ok(r);
         }
 
-        [HttpGet("restaurants/{id}/mongoreviews")]
+        [HttpGet("reviews/{id}/mongorestaurant/reviews")]
         public async Task<IActionResult> GetMongoRestaurantReviews(Guid id)
         {
             var r = await _mongo.GetRestaurantReviews(id);
+            return Ok(r);
+        }
+
+        [HttpGet("reviews/{id}/mongouser/reviews")]
+        public async Task<IActionResult> GetMongoReviewsByUser(Guid id)
+        {
+            var r = await _mongo.GetReviewsByUser(id);
             return Ok(r);
         }
     }

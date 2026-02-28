@@ -96,6 +96,12 @@ namespace TastyTrails.Services
             return reviews;
         }
 
+        public async Task<List<MongoReview>> GetReviewsByUser(Guid id)
+        {
+            var reviews = await Reviews.Find(r => r.UserId == id).ToListAsync();
+            return reviews;
+        }
+
         public async Task<MongoReview> PostReview(MongoReview review)
         {
             var filter = Builders<MongoReview>.Filter.And(
