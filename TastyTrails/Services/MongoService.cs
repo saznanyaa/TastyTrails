@@ -4,6 +4,7 @@ using TastyTrails.Configurations;
 using TastyTrails.Models;
 using MongoDB.Driver.GeoJsonObjectModel;
 using System.Security.Cryptography;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace TastyTrails.Services
 {
@@ -15,6 +16,13 @@ namespace TastyTrails.Services
         {
             var client = new MongoClient(settings.Value.ConnectionString);
             _database = client.GetDatabase(settings.Value.DatabaseName);
+
+            var collection = _database.GetCollection<MongoReview>("reviews");
+            var indexKeys = Builders<MongoReview>.IndexKeys
+                                            .Ascending(r => r.RestaurantId)
+                                            .Ascending(r => r.UserId);
+            var indexOptions = new CreateIndexOptions { Unique = true };
+            collection.Indexes.CreateOne(new CreateIndexModel<MongoReview>(indexKeys, indexOptions));
         }
 
         public IMongoCollection<T> GetCollection<T>(string collectionName)
@@ -80,10 +88,43 @@ namespace TastyTrails.Services
 
         }
 
+        //---reviews----------------------------------------------------------------------------------
+
         public async Task<List<MongoReview>> GetRestaurantReviews(Guid id)
         {
             var reviews = await Reviews.Find(r => r.RestaurantId == id).ToListAsync();
             return reviews;
+        }
+
+        public async Task<MongoReview> PostReview(MongoReview review)
+        {
+            var filter = Builders<MongoReview>.Filter.And(
+                Builders<MongoReview>.Filter.Eq(r => r.RestaurantId, review.RestaurantId),
+                Builders<MongoReview>.Filter.Eq(r => r.UserId, review.UserId)
+            );
+
+            var exists = await Reviews.Find(filter).FirstOrDefaultAsync();
+
+            if (exists != null)
+            {
+                var update = Builders<MongoReview>.Update.Set(r => r.Rating, review.Rating)
+                                                        .Set(r => r.Comment, review.Comment)
+                                                        .Set(r => r.UpdatedAt, DateTime.UtcNow);
+                await Reviews.UpdateOneAsync(filter, update);
+                exists.Rating = review.Rating;
+                exists.Comment = review.Comment;
+                exists.UpdatedAt = review.UpdatedAt;
+                return exists;
+            }
+            else
+            {
+                review.Id = Guid.NewGuid();
+                review.CreatedAt = DateTime.UtcNow;
+                review.UpdatedAt = DateTime.UtcNow;
+
+                await Reviews.InsertOneAsync(review);
+                return review;
+            }
         }
     }
 }

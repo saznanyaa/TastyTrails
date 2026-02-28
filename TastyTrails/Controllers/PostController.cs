@@ -123,5 +123,12 @@ namespace TastyTrails.Controllers
             return Ok(checkin);
         }
 
+        [HttpPost("reviews/mongoreview")]
+        public async Task<IActionResult> PostReviewMongo([FromBody]MongoReview review)
+        {
+            var r = await _mongo.PostReview(review);
+            return Ok(r);
+        }
+
     }
 }
