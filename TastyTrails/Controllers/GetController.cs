@@ -1,4 +1,6 @@
+using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Mvc;
+using TastyTrails.Configurations;
 using TastyTrails.Models;
 using TastyTrails.Services;
 
@@ -9,10 +11,12 @@ namespace TastyTrails.Controllers
     public class GetController:ControllerBase
     {
         private readonly CassandraService _cassandra;
+        private readonly MongoService _mongo;
 
-        public GetController()
+        public GetController(MongoService mng)
         {
             _cassandra = new CassandraService();
+            _mongo = mng;
         }
 
         //---restaurant_views------------------------------------------------------------
@@ -132,8 +136,33 @@ namespace TastyTrails.Controllers
             return Ok(new { RestaurantId = id, RatingsCount = count });
         }
 
-        //---trendinng weekly------------------------------------------------------------------------
-        
+        //-----------------------------------------------------------------------------------
+        [HttpGet("mongoRestaurants")]
+        public async Task<IActionResult> GetMongoRestaurants()
+        {
+            var r = await _mongo.GetRestaurants();
+            return Ok(r.Count);
+        }
 
+        [HttpGet("mongoRest/{id}")]
+        public async Task<IActionResult> GetMongoRestaurantById(Guid id)
+        {
+            var r = await _mongo.GetRestaurantById(id);
+            return Ok(r);
+        }
+
+        [HttpGet("restaurants/nearme")]
+        public async Task<IActionResult> GetRestaurantsNearMe([FromQuery]double lat, [FromQuery] double lng, [FromQuery]double radius=0.01)
+        {
+            var r = await _mongo.GetRestaurantsNearMe(lat, lng, radius);
+            return Ok(r);
+        }
+
+        [HttpGet("restaurants/{id}/mongoreviews")]
+        public async Task<IActionResult> GetMongoRestaurantReviews(Guid id)
+        {
+            var r = await _mongo.GetRestaurantReviews(id);
+            return Ok(r);
+        }
     }
 }
