@@ -97,7 +97,7 @@ namespace TastyTrails.Controllers
 
         //----------------------------------------------------------------------------
         [HttpPost("restaurants/{id}/review")]
-        public async Task<IActionResult> PostRestaurantReview(Guid id, [FromQuery]Guid userId)
+        public async Task<IActionResult> PostRestaurantReview(Guid id, [FromQuery]Guid userId, [FromBody]MongoReview mongoReview)
         {
             var review = new CassandraRestaurantReview
             {
@@ -106,7 +106,9 @@ namespace TastyTrails.Controllers
                 ReviewedAt = DateTime.Now.ToUniversalTime()
             };
             await _cassandra.PostRestaurantReview(review);
-            return Ok(review);
+
+            var mReview = await _mongo.PostReview(id, userId, mongoReview.Rating, mongoReview.Comment);
+            return Ok($"Cassandra review: {review}, and Mongo review: {mReview}");
         }
 
         //---restaurant_checkins-----------------------------------------------------
@@ -121,13 +123,6 @@ namespace TastyTrails.Controllers
             };
             await _cassandra.PostRestaurantCheckin(checkin);
             return Ok(checkin);
-        }
-
-        [HttpPost("reviews/mongoreview")]
-        public async Task<IActionResult> PostReviewMongo([FromBody]MongoReview review)
-        {
-            var r = await _mongo.PostReview(review);
-            return Ok(r);
         }
 
     }

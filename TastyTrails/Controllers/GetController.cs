@@ -64,6 +64,13 @@ namespace TastyTrails.Controllers
         public async Task<IActionResult> GetRestaurantRatingsByUser(Guid id, Guid userId)
         {
             var ratings = await _cassandra.GetRestaurantRatingsByUser(id, userId);
+            // var mngReviews = await _mongo.GetReviewsByUser(userId);
+            // var mngRatings = new List<int>();
+            // foreach(var r in mngReviews)
+            // {
+            //     mngRatings.Add(r.Rating);
+            // }
+            //nmg da se setim koja je fora s ovim tkd neka ga za sad ovako
             return Ok(ratings);
         }
 
@@ -72,8 +79,9 @@ namespace TastyTrails.Controllers
         public async Task<IActionResult> GetRestaurantReviews(Guid id)
         {
             var reviews = await _cassandra.GetRestaurantReview(id);
+            var r = await _mongo.GetRestaurantReviews(id);
     
-            return Ok(reviews);
+            return Ok($"cassandra: {reviews}, mongo: {r}");
         }
 
         [HttpGet("restaurants/{id}/reviewsfromto")]
@@ -157,13 +165,7 @@ namespace TastyTrails.Controllers
             var r = await _mongo.GetRestaurantsNearMe(lat, lng, radius);
             return Ok(r);
         }
-
-        [HttpGet("reviews/{id}/mongorestaurant/reviews")]
-        public async Task<IActionResult> GetMongoRestaurantReviews(Guid id)
-        {
-            var r = await _mongo.GetRestaurantReviews(id);
-            return Ok(r);
-        }
+        //-----------------------------------------------------------------------------
 
         [HttpGet("reviews/{id}/mongouser/reviews")]
         public async Task<IActionResult> GetMongoReviewsByUser(Guid id)

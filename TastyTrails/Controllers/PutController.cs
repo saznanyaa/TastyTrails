@@ -9,10 +9,12 @@ namespace TastyTrails.Controllers
     public class PutController : ControllerBase
     {
         private readonly CassandraService _cassandra;
+        private readonly MongoService _mongo;
 
-        public PutController()
+        public PutController(MongoService mng)
         {
             _cassandra = new CassandraService();
+            _mongo = mng;
         }
 
         [HttpPut("restaurants/{id}/rating")]
@@ -22,6 +24,8 @@ namespace TastyTrails.Controllers
                 return BadRequest("Incorrect rating value!");
 
             await _cassandra.EditRestaurantRating(id, userId, value);
+            var mongoRev = await _mongo.GetReviewByRestAndUser(id, userId);
+            await _mongo.PostReview(id, userId, value, mongoRev.Comment);
 
             return Ok("Rating updated successfully!");
         }

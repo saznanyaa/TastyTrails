@@ -102,31 +102,44 @@ namespace TastyTrails.Services
             return reviews;
         }
 
-        public async Task<MongoReview> PostReview(MongoReview review)
+        public async Task<MongoReview> GetReviewByRestAndUser(Guid restId, Guid userId)
+        {
+            var review = await Reviews.Find(r => r.RestaurantId == restId && r.UserId == userId).FirstOrDefaultAsync();
+            return review;
+        }
+
+        public async Task<MongoReview> PostReview(Guid restaurantId, Guid userId, int rating, string comment)
         {
             var filter = Builders<MongoReview>.Filter.And(
-                Builders<MongoReview>.Filter.Eq(r => r.RestaurantId, review.RestaurantId),
-                Builders<MongoReview>.Filter.Eq(r => r.UserId, review.UserId)
+                Builders<MongoReview>.Filter.Eq(r => r.RestaurantId, restaurantId),
+                Builders<MongoReview>.Filter.Eq(r => r.UserId, userId)
             );
 
             var exists = await Reviews.Find(filter).FirstOrDefaultAsync();
 
             if (exists != null)
             {
-                var update = Builders<MongoReview>.Update.Set(r => r.Rating, review.Rating)
-                                                        .Set(r => r.Comment, review.Comment)
+                var update = Builders<MongoReview>.Update.Set(r => r.Rating, rating)
+                                                        .Set(r => r.Comment, comment)
                                                         .Set(r => r.UpdatedAt, DateTime.UtcNow);
                 await Reviews.UpdateOneAsync(filter, update);
-                exists.Rating = review.Rating;
-                exists.Comment = review.Comment;
-                exists.UpdatedAt = review.UpdatedAt;
+                exists.Rating = rating;
+                exists.Comment = comment;
+                exists.UpdatedAt = DateTime.UtcNow;
                 return exists;
             }
             else
             {
-                review.Id = Guid.NewGuid();
-                review.CreatedAt = DateTime.UtcNow;
-                review.UpdatedAt = DateTime.UtcNow;
+                var review = new MongoReview
+                {
+                    Id = Guid.NewGuid(),
+                    RestaurantId = restaurantId,
+                    UserId = userId,
+                    Rating = rating,
+                    Comment = comment,
+                    CreatedAt = DateTime.UtcNow,
+                    UpdatedAt = DateTime.UtcNow
+                };
 
                 await Reviews.InsertOneAsync(review);
                 return review;
