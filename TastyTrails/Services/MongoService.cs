@@ -132,5 +132,11 @@ namespace TastyTrails.Services
                 return review;
             }
         }
+
+        public async Task<bool> DeleteReview(Guid reviewId, Guid userId)
+        {
+            var result = await Reviews.DeleteOneAsync(r => r.Id == reviewId && r.UserId == userId);
+            return result.DeletedCount > 0;
+        }
     }
 }
