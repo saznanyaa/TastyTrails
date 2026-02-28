@@ -30,7 +30,7 @@ namespace TastyTrails.Services
             _mapper = new Mapper(_session);
         }
 
-        public async Task InsertRestaurantAsync(Restaurant r)
+        public async Task InsertRestaurantAsync(SeedRestaurant r)
         {
             var statement = await _session.PrepareAsync("INSERT INTO restaurants_by_city (city, id, name, latitude, longitude, cuisine, popularity_score) VALUES (?,?,?,?,?,?,?)");
             await _session.ExecuteAsync(statement.Bind(
@@ -40,11 +40,11 @@ namespace TastyTrails.Services
                 r.Latitude,
                 r.Longitude,
                 r.Cuisine,
-                r.PopularityScore
+                0
             ));
         }
 
-        public async Task InsertRestaurantCuisineAsync(Restaurant r)
+        public async Task InsertRestaurantCuisineAsync(SeedRestaurant r)
         {
             var statement = await _session.PrepareAsync("INSERT INTO restaurants_by_city_and_cuisine (city, id, name, latitude, longitude, cuisine, popularity_score) VALUES (?,?,?,?,?,?,?)");
             await _session.ExecuteAsync(statement.Bind(
@@ -54,7 +54,7 @@ namespace TastyTrails.Services
                 r.Latitude,
                 r.Longitude,
                 r.Cuisine,
-                r.PopularityScore
+                0
             ));
         }
 

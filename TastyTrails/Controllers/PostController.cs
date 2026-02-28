@@ -10,11 +10,13 @@ namespace TastyTrails.Controllers
     {
         private readonly OverpassService _overpass;
         private readonly CassandraService _cassandra;
+        private readonly MongoService _mongo;
 
-        public PostController()
+        public PostController(MongoService mg)
         {
             _overpass = new OverpassService();
             _cassandra = new CassandraService();
+            _mongo = mg;
         }
 
         //it's a get, but it posts to cassandra so that's why it's here
@@ -40,6 +42,8 @@ namespace TastyTrails.Controllers
                 await _cassandra.InsertRestaurantLookup(lookup);
             }
 
+            await _mongo.InsertRestaurants(restaurants);
+
             return Ok($"{restaurants.Count} restaurants inserted for {city}.");
         }
 
@@ -63,8 +67,6 @@ namespace TastyTrails.Controllers
             };
 
             await _cassandra.InsertRestaurantView(view);
-
-            //we'll also be updating rending from here but not atm
 
             return Ok();
         }

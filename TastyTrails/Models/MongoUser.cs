@@ -6,8 +6,8 @@ namespace TastyTrails.Models;
 public class MongoUser
 {
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = null!;
+    [BsonRepresentation(BsonType.String)]
+    public Guid Id { get; set; }
 
     [BsonElement("name")]
     public string Name { get; set; } = null!;
@@ -25,16 +25,19 @@ public class MongoUser
     public string? ProfileImage { get; set; }
 
     [BsonElement("savedRestaurants")]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public List<string> SavedRestaurants { get; set; } = new();
+    [BsonRepresentation(BsonType.String)]
+    public List<Guid> SavedRestaurants { get; set; } = new();
 
     [BsonElement("visitedRestaurants")]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public List<string> VisitedRestaurants { get; set; } = new();
+    [BsonRepresentation(BsonType.String)]
+    public List<Guid> VisitedRestaurants { get; set; } = new();
 
-    [BsonElement("reviewedRestaurants")]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public List<string> ReviewedRestaurants { get; set; } = new();
+    [BsonElement("reviewIds")]
+    [BsonRepresentation(BsonType.String)]
+    public List<Guid> ReviewIds { get; set; } = new();
+
+    [BsonElement("isActive")]
+    public bool IsActive { get; set; } = true;
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

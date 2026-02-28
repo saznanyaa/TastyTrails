@@ -6,26 +6,20 @@ namespace TastyTrails.Models;
 public class MongoRestaurant
 {
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = null!;
+    [BsonRepresentation(BsonType.String)]
+    public Guid Id { get; set; }
 
     [BsonElement("name")]
-    public string Name { get; set; } = null!;
+    public string Name { get; set; } = "";
+
+    [BsonElement("coords")]
+    public GeoPoint Coordinates { get; set; } = new();
+
+    [BsonElement("cuisine")]
+    public string? Cuisine { get; set; }
 
     [BsonElement("description")]
     public string? Description { get; set; }
-
-    [BsonElement("cuisine")]
-    public string Cuisine { get; set; } = null!;
-
-    [BsonElement("city")]
-    public string City { get; set; } = null!;
-
-    [BsonElement("address")]
-    public string? Address { get; set; }
-
-    [BsonElement("location")]
-    public GeoLocation? Location { get; set; }
 
     [BsonElement("images")]
     public List<string> Images { get; set; } = new();
@@ -36,18 +30,12 @@ public class MongoRestaurant
     [BsonElement("totalReviews")]
     public int TotalReviews { get; set; } = 0;
 
-    [BsonElement("createdAt")]
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+    [BsonElement("lastViewedAt")]
+    public DateTime? LastViewedAt { get; set; }
 
-    [BsonElement("updatedAt")]
-    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
-}
+    [BsonElement("trendingScore")]
+    public double TrendingScore { get; set; } = 0;
 
-public class GeoLocation
-{
-    [BsonElement("type")]
-    public string Type { get; set; } = "Point";
-
-    [BsonElement("coordinates")]
-    public double[] Coordinates { get; set; } = null!;
+    [BsonElement("sourceId")]
+    public string? SourceId { get; set; }
 }

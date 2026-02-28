@@ -6,19 +6,19 @@ namespace TastyTrails.Models;
 public class MongoReview
 {
     [BsonId]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string Id { get; set; } = null!;
+    [BsonRepresentation(BsonType.String)]
+    public Guid Id { get; set; }
 
     [BsonElement("restaurantId")]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string RestaurantId { get; set; } = null!;
+    [BsonRepresentation(BsonType.String)]
+    public Guid RestaurantId { get; set; }
 
     [BsonElement("userId")]
-    [BsonRepresentation(BsonType.ObjectId)]
-    public string UserId { get; set; } = null!;
+    [BsonRepresentation(BsonType.String)]
+    public Guid UserId { get; set; }
 
     [BsonElement("rating")]
-    public int Rating { get; set; }
+    public int Rating { get; set; } 
 
     [BsonElement("comment")]
     public string? Comment { get; set; }

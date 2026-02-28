@@ -16,7 +16,7 @@ namespace TastyTrails.Services
 
         //(44.7866,20.4489,44.8166,20.4789)BG
         //(45.20,19.78,45.30,19.90)NS
-        public async Task<List<Restaurant>> GetRestaurantsAsync(string city)
+        public async Task<List<SeedRestaurant>> GetRestaurantsAsync(string city)
         {
             string bbox = city switch
             {
@@ -37,7 +37,7 @@ namespace TastyTrails.Services
             var json = await response.Content.ReadAsStringAsync();
             var data = JObject.Parse(json);
 
-            var restaurants = new List<Restaurant>();
+            var restaurants = new List<SeedRestaurant>();
 
             foreach (var element in data["elements"])
             {
@@ -56,11 +56,15 @@ namespace TastyTrails.Services
                 
                 var cuisines = tags["cuisine"]?.ToString().Split(';') ?? new string[] { "unknown" };
 
+                var sourceIdToken = element["id"];
+                if(sourceIdToken == null) continue;
+                var sourceId = sourceIdToken.ToString();
+
                 var restaurantId = Guid.NewGuid();
 
                 foreach (var cuisine in cuisines)
                 {
-                    restaurants.Add(new Restaurant
+                    restaurants.Add(new SeedRestaurant
                     {
                         Id = restaurantId,
                         City = city,
@@ -68,7 +72,7 @@ namespace TastyTrails.Services
                         Latitude = latToken.ToObject<double>(),
                         Longitude = lonToken.ToObject<double>(),
                         Cuisine = cuisine.Trim(),
-                        PopularityScore = 0
+                        SourceId = sourceId
                     });
                 }
             }
