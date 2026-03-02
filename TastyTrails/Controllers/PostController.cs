@@ -1,6 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using TastyTrails.Models;
+using TastyTrails.Models.DTOs;
 using TastyTrails.Services;
+using MongoDB.Driver;
+using Microsoft.AspNetCore.Identity;
 
 namespace TastyTrails.Controllers
 {
@@ -11,12 +14,27 @@ namespace TastyTrails.Controllers
         private readonly OverpassService _overpass;
         private readonly CassandraService _cassandra;
         private readonly MongoService _mongo;
+        private readonly IConfiguration _config;
+        private readonly IMongoCollection<MongoUser> _users;
+        private readonly PasswordHasher<MongoUser> _passwordHasher;
+        private readonly AuthService _auth;
 
-        public PostController(MongoService mg)
+        public PostController(MongoService mg, IConfiguration config, AuthService auth)
         {
             _overpass = new OverpassService();
             _cassandra = new CassandraService();
             _mongo = mg;
+            _config = config;
+            _auth = auth;
+            _passwordHasher = new PasswordHasher<MongoUser>();
+            
+            var mongoSettings = _config.GetSection("MongoSettings");
+            var connectionString = mongoSettings["ConnectionString"]!;
+            var databaseName = mongoSettings["DatabaseName"]!;
+
+            var client = new MongoClient(connectionString);
+            var database = client.GetDatabase(databaseName);
+            _users = database.GetCollection<MongoUser>("users");
         }
 
         //it's a get, but it posts to cassandra so that's why it's here
@@ -54,6 +72,39 @@ namespace TastyTrails.Controllers
             await _cassandra.InsertUserAsync(u);
 
             return Ok($"User {u.Username} inserted with {u.Id} id.");
+        }
+
+        [HttpPost("Register")]
+        public async Task<IActionResult> Register([FromBody]RegisterDto registerDto)
+        {
+            var userId = Guid.NewGuid();
+
+            var mongoUser = new MongoUser
+            {
+                Id = userId,
+                Name = registerDto.Name,
+                Username = registerDto.Username,
+                Email = registerDto.Email,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            
+            var cassandraUser = new CassandraUser
+            {
+                Id = userId,
+                Username = registerDto.Username,
+                Email = registerDto.Email,
+                Role = "user"
+            };
+
+            mongoUser.PasswordHash = _passwordHasher.HashPassword(mongoUser, registerDto.Password);
+            await _users.InsertOneAsync(mongoUser);
+
+            await _cassandra.InsertUserAsync(cassandraUser);
+
+            var token = _auth.GenerateTokenForUser(mongoUser);
+            return Ok(token);
+            
         }
 
         [HttpPost("{id}/view")]
