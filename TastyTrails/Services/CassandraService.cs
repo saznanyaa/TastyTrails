@@ -264,7 +264,6 @@ namespace TastyTrails.Services
             await _mapper.InsertAsync(c);
             var data = await GetCityAndCuisine(c.RestaurantId);
             await IncreaseTrending(data.City, data.Cuisine, c.RestaurantId);
-            
         }
 
         public async Task<List<CassandraRestaurantCheckins>> GetRestaurantCheckins(Guid id)
