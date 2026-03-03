@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using TastyTrails.Models;
 using TastyTrails.Models.DTOs;
 using TastyTrails.Services;
@@ -18,15 +18,17 @@ namespace TastyTrails.Controllers
         private readonly IMongoCollection<MongoUser> _users;
         private readonly PasswordHasher<MongoUser> _passwordHasher;
         private readonly AuthService _auth;
+        private readonly INeo4jService _neo4jService;
 
-        public PostController(MongoService mg, IConfiguration config, AuthService auth)
+        public PostController(MongoService mg , IConfiguration config, AuthService auth, INeo4jService neo4j)
         {
-            _overpass = new OverpassService();
-            _cassandra = new CassandraService();
+            //_overpass = new OverpassService();
+            //_cassandra = new CassandraService();
             _mongo = mg;
             _config = config;
             _auth = auth;
             _passwordHasher = new PasswordHasher<MongoUser>();
+            _neo4jService = neo4j;
             
             var mongoSettings = _config.GetSection("MongoSettings");
             var connectionString = mongoSettings["ConnectionString"]!;
@@ -174,6 +176,69 @@ namespace TastyTrails.Controllers
             };
             await _cassandra.PostRestaurantCheckin(checkin);
             return Ok(checkin);
+        }
+
+        //-------------------------------------------------------------------------------
+        [HttpPost("user")]
+        public async Task<IActionResult> CreateUser([FromBody] NeoUserNode user)
+        {
+            await _neo4jService.CreateUserNodeAsync(user);
+            return Ok($"Korisnik {user.Username} uspešno kreiran/ažuriran.");
+        }
+
+        //--------------------------------------------------------------------------------
+        [HttpPost("restaurant")]
+        public async Task<IActionResult> CreateRestaurant([FromBody] NeoRestaurantNode restaurant)
+        {
+            await _neo4jService.CreateRestaurantNodeAsync(restaurant);
+            return Ok($"Restoran {restaurant.Name} uspešno kreiran/ažuriran.");
+        }
+
+        //--------------------------------------------------------------------------------
+        [HttpPost("connect")]
+        public async Task<IActionResult> Connect(string userId, string restaurantId, string type = "LIKE")
+        {
+            await _neo4jService.ConnectUserToRestaurantAsync(userId, restaurantId, type);
+            return Ok($"Veza [{type}] uspostavljena između korisnika {userId} i restorana {restaurantId}.");
+        }
+
+        //-------------------------------------------------------------------------------
+        [HttpPost("cuisine")]
+        public async Task<IActionResult> CreateCuisine([FromBody] CuisineNode cuisine)
+        {
+            await _neo4jService.CreateCuisineNodeAsync(cuisine);
+            return Ok($"Kuhinja {cuisine.Name} je kreirana.");
+        }
+
+        //-------------------------------------------------------------------------------
+        [HttpPost("restaurant/serve-cuisine")]
+        public async Task<IActionResult> ServeCuisine(string restaurantId, string cuisineId)
+        {
+            await _neo4jService.ConnectRestaurantToCuisineAsync(restaurantId, cuisineId);
+            return Ok("Restoran je uspešno povezan sa tipom kuhinje.");
+        }
+
+        //--------------------------------------------------------------------------------
+        [HttpPost("link-external-review")]
+        public async Task<IActionResult> LinkExternalReview(
+    [FromQuery] string userId,
+    [FromQuery] string restaurantId,
+    [FromBody] ReviewRelationNode externalData)
+        {
+            try
+            {
+                await _neo4jService.LinkExternalReviewAsync(userId, restaurantId, externalData);
+                return Ok(new
+                {
+                    Message = $"Uspešno povezana recenzija za korisnika {userId} i restoran {restaurantId}.",
+                    MongoId = externalData.MongoReviewId,
+                    CassandraId = externalData.CassandraRatingId
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Greška prilikom povezivanja: {ex.Message}");
+            }
         }
 
     }
