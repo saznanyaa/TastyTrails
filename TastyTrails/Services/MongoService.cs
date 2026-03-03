@@ -23,6 +23,12 @@ namespace TastyTrails.Services
                                             .Ascending(r => r.UserId);
             var indexOptions = new CreateIndexOptions { Unique = true };
             collection.Indexes.CreateOne(new CreateIndexModel<MongoReview>(indexKeys, indexOptions));
+
+            var users = _database.GetCollection<MongoUser>("users");
+            var euIndex = Builders<MongoUser>.IndexKeys.Ascending(u => u.Email)
+                                            .Ascending(u => u.Username);
+            var iOptions = new CreateIndexOptions { Unique = true };
+            users.Indexes.CreateOne(new CreateIndexModel<MongoUser>(euIndex, iOptions));
         }
 
         public IMongoCollection<T> GetCollection<T>(string collectionName)

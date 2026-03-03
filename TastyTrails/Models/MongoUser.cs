@@ -32,10 +32,6 @@ public class MongoUser
     [BsonRepresentation(BsonType.String)]
     public List<Guid> VisitedRestaurants { get; set; } = new();
 
-    [BsonElement("reviewIds")]
-    [BsonRepresentation(BsonType.String)]
-    public List<Guid> ReviewIds { get; set; } = new();
-
     [BsonElement("isActive")]
     public bool IsActive { get; set; } = true;
 
