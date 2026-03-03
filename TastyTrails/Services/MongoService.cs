@@ -5,6 +5,7 @@ using TastyTrails.Models;
 using MongoDB.Driver.GeoJsonObjectModel;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Http.HttpResults;
+using TastyTrails.Models.DTOs;
 
 namespace TastyTrails.Services
 {
@@ -38,6 +39,7 @@ namespace TastyTrails.Services
 
         private IMongoCollection<MongoRestaurant> Restaurants => _database.GetCollection<MongoRestaurant>("restaurants");
         private IMongoCollection<MongoReview> Reviews => _database.GetCollection<MongoReview>("reviews");
+        private IMongoCollection<MongoUser> Users => _database.GetCollection<MongoUser>("users");
         public async Task InsertRestaurants(List<SeedRestaurant> seeds)
         {
             if(seeds == null || !seeds.Any()) return;
@@ -156,6 +158,28 @@ namespace TastyTrails.Services
         {
             var result = await Reviews.DeleteOneAsync(r => r.Id == reviewId && r.UserId == userId);
             return result.DeletedCount > 0;
+        }
+
+        //---users---------------------------------------------------------------------------
+        public async Task<MongoUser> GetUserById(Guid id)
+        {
+            var user = await Users.Find(u => u.Id == id).FirstOrDefaultAsync();
+            return user;
+        }
+
+        public async Task<bool> UpdateUsernameOrEmail(Guid id, UpdateDTO dto)
+        {
+            var update = Builders<MongoUser>.Update.Set(u => u.Email, dto.Email)
+                                                    .Set(u => u.Username, dto.Username);
+
+            var res = await Users.UpdateOneAsync(u => u.Id == id, update);
+            return res.ModifiedCount>0;
+        }
+
+        public async Task<bool> DeleteUser(Guid id)
+        {
+            var res = await Users.DeleteOneAsync(u => u.Id == id);
+            return res.DeletedCount>0;
         }
     }
 }

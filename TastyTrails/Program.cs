@@ -3,7 +3,6 @@ using TastyTrails.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
-using MongoDB.Driver;
 
 var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
