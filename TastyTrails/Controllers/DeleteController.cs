@@ -11,11 +11,13 @@ namespace TastyTrails.Controllers
     {
         private readonly CassandraService _cassandra;
         private readonly MongoService _mongo;
+        private readonly INeo4jService _neo4jService;
 
-        public DeleteController(MongoService mg)
+        public DeleteController(MongoService mg, INeo4jService neo4j)
         {
-            _cassandra = new CassandraService();
+           // _cassandra = new CassandraService();
             _mongo = mg;
+            _neo4jService = neo4j;
         }
 
         [HttpDelete("users/{userId}/saved/{restaurantId}")]
@@ -31,6 +33,20 @@ namespace TastyTrails.Controllers
             var deleted = await _mongo.DeleteReview(rId, userId);
             if(!deleted) return NotFound("Review not found!");
             return Ok(deleted);
+        }
+
+        [HttpDelete("user/{id}")]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            await _neo4jService.DeleteUserAsync(id);
+            return Ok("Korisnik obrisan.");
+        }
+
+        [HttpDelete("restaurant/{id}")]
+        public async Task<IActionResult> DeleteRestaurant(string id)
+        {
+            await _neo4jService.DeleteRestaurantAsync(id);
+            return Ok("Restoran obrisan.");
         }
     }
 }

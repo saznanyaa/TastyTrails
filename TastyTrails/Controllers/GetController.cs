@@ -1,4 +1,4 @@
-using System.Runtime.CompilerServices;
+﻿using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Mvc;
 using TastyTrails.Configurations;
 using TastyTrails.Models;
@@ -12,11 +12,13 @@ namespace TastyTrails.Controllers
     {
         private readonly CassandraService _cassandra;
         private readonly MongoService _mongo;
+        private readonly INeo4jService _neo4jService;
 
-        public GetController(MongoService mng)
+        public GetController(MongoService mng, INeo4jService neo4j)
         {
-            _cassandra = new CassandraService();
+           // _cassandra = new CassandraService();
             _mongo = mng;
+            _neo4jService = neo4j;
         }
 
         //---restaurant_views------------------------------------------------------------
@@ -172,6 +174,22 @@ namespace TastyTrails.Controllers
         {
             var r = await _mongo.GetReviewsByUser(id);
             return Ok(r);
+        }
+
+        //-----------users--------------------------------------------------------
+        [HttpGet("user/{id}")]
+        public async Task<IActionResult> GetUser(string id)
+        {
+            var user = await _neo4jService.GetUserByIdAsync(id);
+            return user != null ? Ok(user) : NotFound("Korisnik nije pronađen.");
+        }
+
+        //--------------------------------------------------------------------------
+        [HttpGet("user/{userId}/likes")]
+        public async Task<IActionResult> GetLikes(string userId)
+        {
+            var likes = await _neo4jService.GetUserLikesAsync(userId);
+            return Ok(likes);
         }
     }
 }
