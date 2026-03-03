@@ -46,6 +46,11 @@ export default function Navbar() {
     setShowLogin(false);
   };
 
+  const handleLoginSuccess = (token) => {
+    console.log("Logged in with token:", token);
+    //setIsLoggedIn(true);
+  };
+
   return (
     <nav style={styles.nav}>
       <h1 style={styles.logo}>TastyTrail</h1>
@@ -70,12 +75,7 @@ export default function Navbar() {
 
       {!user && showLogin && (
         <div style={styles.loginDropdownWrapper}>
-          <LoginDropdown
-            onLoginSuccess={(token) => {
-              setUser({ name: "User" }); // replace with actual username if decoded from JWT
-              setShowLogin(false);
-            }}
-          />
+          <LoginDropdown onLoginSuccess={handleLoginSuccess} />
         </div>
       )}
     </nav>

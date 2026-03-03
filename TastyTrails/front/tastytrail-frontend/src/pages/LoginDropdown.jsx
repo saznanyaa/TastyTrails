@@ -1,18 +1,18 @@
 import { useState } from "react";
 import axios from "axios";
 
-export default function LoginDropdown() {
+export default function LoginDropdown({onLoginSuccess}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     try{
-        const response = axios.post(`http://localhost:5146/api/auth/login`, { email, password });
+        const response = await axios.post(`http://localhost:5146/api/auth/login`, { email, password });
         const { token } = response.data;
-        localStorage.setItem("Authtoken", token);
+        localStorage.setItem("token", token);
         if(onLoginSuccess) onLoginSuccess(token);
         console.log("Login successful, token:", token);
     }
