@@ -1,5 +1,7 @@
 using TastyTrails.Configurations;
 using TastyTrails.Services;
+using Neo4j.Driver;
+using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,8 +14,15 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("MongoSettings"));
-
 builder.Services.AddSingleton<MongoService>();
+
+builder.Services.Configure<Neo4jSettings>(builder.Configuration.GetSection("Neo4jSettings"));
+builder.Services.AddSingleton<IDriver>(sp =>
+{
+    var settings = sp.GetRequiredService<IOptions<Neo4jSettings>>().Value;
+    return GraphDatabase.Driver(settings.Uri, AuthTokens.Basic(settings.User, settings.Password));
+});
+
 
 var app = builder.Build();
 
