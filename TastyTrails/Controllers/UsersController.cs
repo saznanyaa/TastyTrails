@@ -168,5 +168,35 @@ namespace TastyTrails.Controllers
                 return NotFound();
             }
         }
+
+        [HttpPost("{targetId}")]
+        public async Task<IActionResult> Follow(Guid targetId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized();
+
+            var currentId = Guid.Parse(userIdClaim);
+
+            await _mongo.Follow(currentId, targetId);
+
+            return Ok(new { message = "Followed successfully." });
+        }
+
+        [HttpDelete("delete/{targetId}")]
+        public async Task<IActionResult> Unfollow(Guid targetId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized();
+
+            var currentId = Guid.Parse(userIdClaim);
+
+            await _mongo.Unfollow(currentId, targetId);
+
+            return Ok(new { message = "Unfollowed successfully." });
+        }
     }
 }

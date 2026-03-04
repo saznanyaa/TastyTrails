@@ -6,6 +6,7 @@ using MongoDB.Driver.GeoJsonObjectModel;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Http.HttpResults;
 using TastyTrails.Models.DTOs;
+using Cassandra;
 
 namespace TastyTrails.Services
 {
@@ -237,5 +238,44 @@ namespace TastyTrails.Services
 
             return restaurants;
         }
+
+        public async Task Follow(Guid currentId, Guid targetId)
+{
+        if (currentId == targetId) throw new Exception("You cannot follow yourself!");
+
+        var current = await GetUserById(currentId);
+        var target = await GetUserById(targetId);
+
+        if (current == null || target == null) throw new Exception("User not found!");
+
+        if (current.Following.Contains(targetId)) return;
+
+        var updateCurrent = Builders<MongoUser>.Update.AddToSet(u => u.Following, targetId);
+
+        var updateTarget = Builders<MongoUser>.Update.AddToSet(u => u.Followers, currentId);
+
+        await Users.UpdateOneAsync(u => u.Id == currentId, updateCurrent);
+        await Users.UpdateOneAsync(u => u.Id == targetId, updateTarget);
+}
+
+        public async Task Unfollow(Guid currentId, Guid targetId)
+        {
+            if (currentId == targetId) throw new Exception("You cannot unfollow yourself!");
+
+            var current = await GetUserById(currentId);
+            var target = await GetUserById(targetId);
+
+            if(current == null || target == null) throw new Exception("User not found!");
+
+            if(!current.Following.Contains(targetId)) return;
+
+            var updateCurrent = Builders<MongoUser>.Update.Pull(u => u.Following, targetId);
+            var updateTarget = Builders<MongoUser>.Update.Pull(u => u.Followers, currentId);
+
+            await Users.UpdateOneAsync(u => u.Id == currentId, updateCurrent);
+            await Users.UpdateOneAsync(u => u.Id == targetId, updateTarget);
+        }
+
+        
     }
 }
