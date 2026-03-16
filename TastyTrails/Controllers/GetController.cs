@@ -16,7 +16,7 @@ namespace TastyTrails.Controllers
 
         public GetController(MongoService mng, INeo4jService neo4j)
         {
-           // _cassandra = new CassandraService();
+            _cassandra = new CassandraService();
             _mongo = mng;
             _neo4jService = neo4j;
         }

@@ -34,6 +34,12 @@ public class MongoUser
 
     [BsonElement("isActive")]
     public bool IsActive { get; set; } = true;
+    [BsonElement("following")]
+    [BsonRepresentation(BsonType.String)]
+    public List<Guid> Following { get; set; } = new();
+    [BsonElement("followers")]
+    [BsonRepresentation(BsonType.String)]
+    public List<Guid> Followers { get; set; } = new();
 
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

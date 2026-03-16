@@ -22,9 +22,8 @@ namespace TastyTrails.Controllers
 
         public PostController(MongoService mg , IConfiguration config, AuthService auth, INeo4jService neo4j)
         {
-            //_overpass = new OverpassService();
-            
-            //_cassandra = new CassandraService();
+            _overpass = new OverpassService();
+            _cassandra = new CassandraService();
             _mongo = mg;
             _config = config;
             _auth = auth;
@@ -204,43 +203,43 @@ namespace TastyTrails.Controllers
         }
 
         //-------------------------------------------------------------------------------
-        [HttpPost("cuisine")]
-        public async Task<IActionResult> CreateCuisine([FromBody] CuisineNode cuisine)
-        {
-            await _neo4jService.CreateCuisineNodeAsync(cuisine);
-            return Ok($"Kuhinja {cuisine.Name} je kreirana.");
-        }
+        //[HttpPost("cuisine")]
+        // public async Task<IActionResult> CreateCuisine([FromBody] CuisineNode cuisine)
+        // {
+        //     await _neo4jService.CreateCuisineNodeAsync(cuisine);
+        //     return Ok($"Kuhinja {cuisine.Name} je kreirana.");
+        // }
 
         //-------------------------------------------------------------------------------
-        [HttpPost("restaurant/serve-cuisine")]
-        public async Task<IActionResult> ServeCuisine(string restaurantId, string cuisineId)
-        {
-            await _neo4jService.ConnectRestaurantToCuisineAsync(restaurantId, cuisineId);
-            return Ok("Restoran je uspešno povezan sa tipom kuhinje.");
-        }
+        //[HttpPost("restaurant/serve-cuisine")]
+        // public async Task<IActionResult> ServeCuisine(string restaurantId, string cuisineId)
+        // {
+        //     await _neo4jService.ConnectRestaurantToCuisineAsync(restaurantId, cuisineId);
+        //     return Ok("Restoran je uspešno povezan sa tipom kuhinje.");
+        // }
 
         //--------------------------------------------------------------------------------
-        [HttpPost("link-external-review")]
-        public async Task<IActionResult> LinkExternalReview(
-    [FromQuery] string userId,
-    [FromQuery] string restaurantId,
-    [FromBody] ReviewRelationNode externalData)
-        {
-            try
-            {
-                await _neo4jService.LinkExternalReviewAsync(userId, restaurantId, externalData);
-                return Ok(new
-                {
-                    Message = $"Uspešno povezana recenzija za korisnika {userId} i restoran {restaurantId}.",
-                    MongoId = externalData.MongoReviewId,
-                    CassandraId = externalData.CassandraRatingId
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest($"Greška prilikom povezivanja: {ex.Message}");
-            }
-        }
+        //[HttpPost("link-external-review")]
+    //     public async Task<IActionResult> LinkExternalReview(
+    // [FromQuery] string userId,
+    // [FromQuery] string restaurantId,
+    // [FromBody] ReviewRelationNode externalData)
+    //     {
+    //         try
+    //         {
+    //             await _neo4jService.LinkExternalReviewAsync(userId, restaurantId, externalData);
+    //             return Ok(new
+    //             {
+    //                 Message = $"Uspešno povezana recenzija za korisnika {userId} i restoran {restaurantId}.",
+    //                 MongoId = externalData.MongoReviewId,
+    //                 CassandraId = externalData.CassandraRatingId
+    //             });
+    //         }
+    //         catch (Exception ex)
+    //         {
+    //             return BadRequest($"Greška prilikom povezivanja: {ex.Message}");
+    //         }
+    //     }
 
         //----------------------------------------------------------------------------------------
         [HttpPost("user/follow/{followerId}/{followedId}")]

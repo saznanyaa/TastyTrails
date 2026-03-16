@@ -15,7 +15,7 @@ namespace TastyTrails.Controllers
 
         public DeleteController(MongoService mg, INeo4jService neo4j)
         {
-           // _cassandra = new CassandraService();
+            _cassandra = new CassandraService();
             _mongo = mg;
             _neo4jService = neo4j;
         }

@@ -6,6 +6,7 @@ using MongoDB.Driver.GeoJsonObjectModel;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Http.HttpResults;
 using TastyTrails.Models.DTOs;
+using Cassandra;
 
 namespace TastyTrails.Services
 {
@@ -164,6 +165,7 @@ namespace TastyTrails.Services
         public async Task<MongoUser> GetUserById(Guid id)
         {
             var user = await Users.Find(u => u.Id == id).FirstOrDefaultAsync();
+            if(user == null) throw new Exception("User not found");
             return user;
         }
 
@@ -181,5 +183,99 @@ namespace TastyTrails.Services
             var res = await Users.DeleteOneAsync(u => u.Id == id);
             return res.DeletedCount>0;
         }
+
+        public async Task<Guid> PostUserSavedRestaurnts(Guid userId, Guid restaurantId)
+        {
+            var filter = Builders<MongoUser>.Filter.Eq(u => u.Id, userId);
+            var update = Builders<MongoUser>.Update.AddToSet(u => u.SavedRestaurants, restaurantId);
+
+            var result = await Users.UpdateOneAsync(filter, update);
+            if (result.MatchedCount == 0) throw new Exception("User not found");
+
+            return restaurantId;
+        }
+
+        public async Task<Guid> DeleteUserSavedRestaurant(Guid userId, Guid restaurantId)
+        {
+            var filter = Builders<MongoUser>.Filter.Eq(u => u.Id, userId);
+            var update = Builders<MongoUser>.Update.Pull(u => u.SavedRestaurants, restaurantId);
+
+            var result = await Users.UpdateOneAsync(filter, update);
+            if (result.MatchedCount == 0) throw new Exception("User not found");
+
+            return restaurantId;
+        }
+
+        public async Task<List<MongoRestaurant>> GetUserSavedRestaurants(Guid userId)
+        {
+            var user = await GetUserById(userId);
+            if(user == null) throw new Exception("User not found");
+
+            var filter = Builders<MongoRestaurant>.Filter.In(r => r.Id, user.SavedRestaurants);
+            var restaurants = await Restaurants.Find(filter).ToListAsync();
+
+            return restaurants;
+        }
+
+        public async Task<Guid> PostUserVisitedRestaurant(Guid userId, Guid restaurantId)
+        {
+            var filter = Builders<MongoUser>.Filter.Eq(u => u.Id, userId);
+            var update = Builders<MongoUser>.Update.AddToSet(u => u.VisitedRestaurants, restaurantId);
+
+            var result = await Users.UpdateOneAsync(filter, update);
+            if (result.MatchedCount == 0) throw new Exception("User not found");
+
+            return restaurantId;
+        }
+
+        public async Task<List<MongoRestaurant>> GetUserVisitedRestaurants(Guid userId)
+        {
+            var user = await GetUserById(userId);
+            if(user == null) throw new Exception("User not found");
+
+            var filter = Builders<MongoRestaurant>.Filter.In(r => r.Id, user.VisitedRestaurants);
+            var restaurants = await Restaurants.Find(filter).ToListAsync();
+
+            return restaurants;
+        }
+
+        public async Task Follow(Guid currentId, Guid targetId)
+{
+        if (currentId == targetId) throw new Exception("You cannot follow yourself!");
+
+        var current = await GetUserById(currentId);
+        var target = await GetUserById(targetId);
+
+        if (current == null || target == null) throw new Exception("User not found!");
+
+        if (current.Following.Contains(targetId)) return;
+
+        var updateCurrent = Builders<MongoUser>.Update.AddToSet(u => u.Following, targetId);
+
+        var updateTarget = Builders<MongoUser>.Update.AddToSet(u => u.Followers, currentId);
+
+        await Users.UpdateOneAsync(u => u.Id == currentId, updateCurrent);
+        await Users.UpdateOneAsync(u => u.Id == targetId, updateTarget);
+}
+
+        public async Task Unfollow(Guid currentId, Guid targetId)
+        {
+            if (currentId == targetId) throw new Exception("You cannot unfollow yourself!");
+
+            var current = await GetUserById(currentId);
+            var target = await GetUserById(targetId);
+
+            if(current == null || target == null) throw new Exception("User not found!");
+
+            if(!current.Following.Contains(targetId)) return;
+
+            var updateCurrent = Builders<MongoUser>.Update.Pull(u => u.Following, targetId);
+            var updateTarget = Builders<MongoUser>.Update.Pull(u => u.Followers, currentId);
+
+            await Users.UpdateOneAsync(u => u.Id == currentId, updateCurrent);
+            await Users.UpdateOneAsync(u => u.Id == targetId, updateTarget);
+        }
+
+        
     }
 }
