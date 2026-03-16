@@ -17,6 +17,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("MongoSettings"));
 
+builder.Services.AddScoped<INeo4jService, Neo4jService>();
 builder.Services.Configure<Neo4jSettings>(builder.Configuration.GetSection("Neo4jSettings"));
 builder.Services.AddSingleton<IDriver>(sp =>
 {
@@ -26,6 +27,8 @@ builder.Services.AddSingleton<IDriver>(sp =>
 
 
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<MongoService>();
+//builder.Services.AddScoped<CassandraService>();
 
 var jwtSettings = builder.Configuration
     .GetSection("JwtSettings")

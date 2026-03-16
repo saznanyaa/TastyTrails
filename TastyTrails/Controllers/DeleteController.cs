@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http.HttpResults;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using TastyTrails.Models;
 using TastyTrails.Services;
@@ -48,5 +48,44 @@ namespace TastyTrails.Controllers
             await _neo4jService.DeleteRestaurantAsync(id);
             return Ok("Restoran obrisan.");
         }
+
+        [HttpDelete("sync-delete-user/{userId}")]
+        public async Task<IActionResult> SyncDeleteUser(string userId)
+        {
+            try
+            {
+                // 1. NEO4J DEO - Koristimo metodu koju već imaš u servisu (linija 37 tvog koda)
+                await _neo4jService.DeleteUserAsync(userId);
+
+                // 2. MONGODB DEO - Moramo pretvoriti string u Guid jer tvoj Mongo to traži
+                if (Guid.TryParse(userId, out Guid userGuid))
+                {
+                    // Pozivamo sinhronu metodu bez await-a jer tako definisana u tvom servisu
+                    _mongo.DeleteUser(userGuid);
+                }
+                else
+                {
+                    return BadRequest("Prosleđeni ID nije u ispravnom Guid formatu.");
+                }
+
+                return Ok(new
+                {
+                    Message = "Korisnik uspešno obrisan iz obe baze (Synchronized).",
+                    UserId = userId
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Greška pri sinhronizovanom brisanju: {ex.Message}");
+            }
+        }
+
+        [HttpDelete("user/unfollow/{followerId}/{followedId}")]
+        public async Task<IActionResult> UnfollowUser(string followerId, string followedId)
+        {
+            await _neo4jService.UnfollowUserAsync(followerId, followedId);
+            return Ok(new { Message = "Korisnik više ne prati drugog korisnika." });
+        }
+
     }
 }

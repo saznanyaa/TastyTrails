@@ -191,5 +191,14 @@ namespace TastyTrails.Controllers
             var likes = await _neo4jService.GetUserLikesAsync(userId);
             return Ok(likes);
         }
+
+        //--------------reccomendation-----------------------------------------------
+        [HttpGet("user/recommendations/{userId}")]
+        public async Task<IActionResult> GetRecommendations(string userId)
+        {
+            var list = await _neo4jService.GetSmartRecommendationsAsync(userId);
+            if (list == null || list.Count == 0) return NotFound("Nema preporuka.");
+            return Ok(list);
+        }
     }
 }

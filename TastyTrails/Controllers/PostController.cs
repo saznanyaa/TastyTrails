@@ -23,6 +23,7 @@ namespace TastyTrails.Controllers
         public PostController(MongoService mg , IConfiguration config, AuthService auth, INeo4jService neo4j)
         {
             //_overpass = new OverpassService();
+            
             //_cassandra = new CassandraService();
             _mongo = mg;
             _config = config;
@@ -239,6 +240,22 @@ namespace TastyTrails.Controllers
             {
                 return BadRequest($"Greška prilikom povezivanja: {ex.Message}");
             }
+        }
+
+        //----------------------------------------------------------------------------------------
+        [HttpPost("user/follow/{followerId}/{followedId}")]
+        public async Task<IActionResult> FollowUser(string followerId, string followedId)
+        {
+            await _neo4jService.FollowUserAsync(followerId, followedId);
+            return Ok(new { Message = "Veza FOLLOWS uspešno kreirana." });
+        }
+
+        //---------------------------------------------------------------------------------------
+        [HttpPost("user/like-cuisine/{userId}/{cuisineId}")]
+        public async Task<IActionResult> LikeCuisine(string userId, string cuisineId)
+        {
+            await _neo4jService.UserLikesCuisineAsync(userId, cuisineId);
+            return Ok(new { Message = "Veza LIKES_CUISINE uspešno kreirana." });
         }
 
     }

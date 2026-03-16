@@ -4,17 +4,29 @@ namespace TastyTrails.Services
 {
     public interface INeo4jService
     {
-        // Create & Update
+
+       //user i restaurant
         Task CreateUserNodeAsync(NeoUserNode user);
         Task CreateRestaurantNodeAsync(NeoRestaurantNode restaurant);
         Task ConnectUserToRestaurantAsync(string userId, string restaurantId, string relationType);
 
-        // Read
         Task<NeoUserNode?> GetUserByIdAsync(string id);
         Task<List<NeoRestaurantNode>> GetUserLikesAsync(string userId);
 
-        // Delete
         Task DeleteUserAsync(string userId);
         Task DeleteRestaurantAsync(string restaurantId);
+        
+        //cuisine
+        Task CreateCuisineNodeAsync(CuisineNode cuisine);
+        Task ConnectRestaurantToCuisineAsync(string restaurantId, string cuisineId);
+
+        //review
+        Task LinkExternalReviewAsync(string userId, string restaurantId, ReviewRelationNode externalData);
+        Task ExecuteWriteAsync(string query, object parameters = null);
+
+        Task FollowUserAsync(string followerId, string followedId);
+        Task UserLikesCuisineAsync(string userId, string cuisineId);
+        Task<List<NeoRestaurantNode>> GetSmartRecommendationsAsync(string userId);
+        Task UnfollowUserAsync(string followerId, string followedId);
     }
 }
