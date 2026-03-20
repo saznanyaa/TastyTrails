@@ -105,7 +105,7 @@ namespace TastyTrails.Controllers
             await _cassandra.InsertUserAsync(cassandraUser);
 
             var token = _auth.GenerateTokenForUser(mongoUser);
-            return Ok(token);
+            return Ok(new { message = "Registration successful", token = token});
             
         }
 

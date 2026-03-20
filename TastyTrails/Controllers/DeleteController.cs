@@ -49,7 +49,7 @@ namespace TastyTrails.Controllers
             return Ok("Restoran obrisan.");
         }
 
-        [HttpDelete("sync-delete-user/{userId}")]
+        /*[HttpDelete("sync-delete-user/{userId}")]
         public async Task<IActionResult> SyncDeleteUser(string userId)
         {
             try
@@ -78,7 +78,7 @@ namespace TastyTrails.Controllers
             {
                 return StatusCode(500, $"Greška pri sinhronizovanom brisanju: {ex.Message}");
             }
-        }
+        }*/
 
         [HttpDelete("user/unfollow/{followerId}/{followedId}")]
         public async Task<IActionResult> UnfollowUser(string followerId, string followedId)

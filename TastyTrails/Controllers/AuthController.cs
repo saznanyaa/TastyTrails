@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Http.HttpResults;
+﻿using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using TastyTrails.Models;
 using TastyTrails.Services;
@@ -23,5 +23,7 @@ namespace TastyTrails.Controllers
             var token = await _authService.Login(dto);
             return Ok(new { token });
         }
+
+
     }     
 }

@@ -1,83 +1,103 @@
-import { Link } from "react-router-dom"
+﻿import { Link } from "react-router-dom";
 import { useState, useEffect } from "react";
-import LoginDropdown from "./LoginDropdown";
 
 const styles = {
-  nav: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: "10px 20px",
-    backgroundColor: "#000",
-    color: "white",
-    position: "relative",
-  },
-  logo: { margin: 0 },
-  link: { marginLeft: "15px", color: "white", textDecoration: "none", fontWeight: "bold" },
-  loginDropdownWrapper: {
-    position: "absolute",
-    top: "60px",
-    right: "20px",
-    background: "#1a1a1a",
-    padding: "20px",
-    borderRadius: "8px",
-    color: "white",
-    boxShadow: "0 4px 8px rgba(0,0,0,0.2)",
-    zIndex: 1000,
-  },
+    nav: {
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "15px 30px",
+        backgroundColor: "#000",
+        color: "white",
+        position: "relative",
+        borderBottom: "1px solid #222"
+    },
+    logo: {
+        margin: 0,
+        color: "white",
+        letterSpacing: "2px"
+    },
+    link: {
+        marginLeft: "20px",
+        color: "white",
+        textDecoration: "none",
+        fontWeight: "bold",
+        fontSize: "14px",
+        textTransform: "uppercase"
+    },
+    button: {
+        marginLeft: "20px",
+        padding: "8px 16px",
+        backgroundColor: "white",
+        color: "black",
+        border: "none",
+        fontWeight: "bold",
+        cursor: "pointer",
+        textTransform: "uppercase",
+        fontSize: "12px",
+        transition: "0.3s"
+    }
 };
 
 export default function Navbar() {
-  const [showLogin, setShowLogin] = useState(false);
-  const [user, setUser] = useState(null); // track logged-in user
+    const [user, setUser] = useState(null);
 
-  // optional: load token/user from localStorage on mount
-  useEffect(() => {
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      // you could decode JWT to get username here, for demo we'll just set a placeholder
-      setUser({ name: "User" });
-    }
-  }, []);
+    useEffect(() => {
+        const token = localStorage.getItem("authToken");
+        const storedUserId = localStorage.getItem("userId");
+        if (token && storedUserId) {
+            setUser({ name: "David", id: storedUserId });
+        }
+    }, []);
 
-  const handleLogout = () => {
-    localStorage.removeItem("authToken");
-    setUser(null);
-    setShowLogin(false);
-  };
+    const handleLogout = () => {
+        localStorage.removeItem("authToken");
+        localStorage.removeItem("userId");
+        setUser(null);
+        window.location.href = "/home";
+    };
 
-  const handleLoginSuccess = (token) => {
-    console.log("Logged in with token:", token);
-    //setIsLoggedIn(true);
-  };
+    return (
+        <nav style={styles.nav}>
+            <Link to="/home" style={{ textDecoration: "none" }}>
+                <h1 style={styles.logo}>TastyTrail</h1>
+            </Link>
 
-  return (
-    <nav style={styles.nav}>
-      <h1 style={styles.logo}>TastyTrail</h1>
-      <div style={{ display: "flex", alignItems: "center" }}>
-        <a href="/" style={styles.link}>Home</a>
-        <a href="/explore" style={styles.link}>Explore</a>
-        <a href="/profile" style={styles.link}>Profile</a>
+            <div style={{ display: "flex", alignItems: "center" }}>
+                <Link to="/home" style={styles.link}>Home</Link>
+                <Link to="/explore" style={styles.link}>Explore</Link>
 
-        {!user && (
-          <button onClick={() => setShowLogin(!showLogin)} style={{ marginLeft: "15px" }}>
-            Login
-          </button>
-        )}
+                {user ? (
+                    <Link to={`/profile/${user.id}`} style={styles.link}>Profile</Link>
+                ) : (
+                    <Link to="/register" style={styles.link}>Profile</Link>
+                )}
 
-        {user && (
-          <>
-            <span style={{ marginLeft: "15px" }}>Welcome, {user.name}!</span>
-            <button onClick={handleLogout} style={{ marginLeft: "10px" }}>Logout</button>
-          </>
-        )}
-      </div>
+                {!user && (
+                    <Link to="/login">
+                        <button
+                            style={styles.button}
+                            onMouseOver={(e) => e.target.style.backgroundColor = "#ccc"}
+                            onMouseOut={(e) => e.target.style.backgroundColor = "white"}
+                        >
+                            Login
+                        </button>
+                    </Link>
+                )}
 
-      {!user && showLogin && (
-        <div style={styles.loginDropdownWrapper}>
-          <LoginDropdown onLoginSuccess={handleLoginSuccess} />
-        </div>
-      )}
-    </nav>
-  );
+                {user && (
+                    <>
+                        <button
+                            onClick={handleLogout}
+                            style={{ ...styles.button, backgroundColor: "transparent", color: "white", border: "1px solid white" }}
+                            onMouseOver={(e) => { e.target.style.backgroundColor = "white"; e.target.style.color = "black"; }}
+                            onMouseOut={(e) => { e.target.style.backgroundColor = "transparent"; e.target.style.color = "white"; }}
+                        >
+                            Logout
+                        </button>
+                    </>
+                )}
+            </div>
+        </nav>
+    );
 }

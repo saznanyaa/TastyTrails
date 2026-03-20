@@ -1,11 +1,14 @@
 ﻿import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-export default function Login() {
+export default function Registration() {
     const [formData, setFormData] = useState({
-        email: '',
-        password: ''
+        name: '',     
+        username: '',   
+        email: '',     
+        password: '',  
     });
+
     const navigate = useNavigate();
 
     const handleChange = (e) => {
@@ -15,62 +18,68 @@ export default function Login() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Podaci moraju da se zovu isto kao u RegisterDto na backendu
+        const registerData = {
+            name: formData.name,
+            username: formData.username,
+            email: formData.email,
+            password: formData.password
+        };
+
         try {
-            const response = await fetch('https://localhost:7216/api/auth/Login', {
+            const response = await fetch('https://localhost:7216/api/post/Register', { // Proveri da li je putanja /api/post ili samo /post
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData),
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(registerData),
             });
 
             if (response.ok) {
                 const data = await response.json();
-                // Čuvamo podatke da bi Navbar znao da smo ulogovani
-                localStorage.setItem("authToken", data.token);
-                localStorage.setItem("userId", data.userId || "u1");
+                const token = data.token;
 
-                alert("Welcome back!");
-                navigate('/home');
-                window.location.reload(); // Osvežavamo da Navbar vidi promenu
+                if (token) {
+                    localStorage.setItem("authToken", token);
+                    alert("Registration successful!");
+                    navigate('/home');
+                } else {
+                    alert("Registration successful, but no token received.");
+                }
             } else {
-                alert("Invalid username or password.");
+                alert("Registration failed. Please try again.");
             }
         } catch (err) {
-            console.error(err);
+            console.error("Greška pri slanju:", err);
             alert("Server error.");
         }
-    };
+    }; 
 
     return (
         <div style={containerStyle}>
             <div style={formWrapperStyle}>
                 <h2 style={logoStyle}>TastyTrail</h2>
-                <h3 style={subtitleStyle}>MEMBER LOGIN</h3>
+                <h3 style={subtitleStyle}>CREATE ACCOUNT</h3>
 
                 <form onSubmit={handleSubmit} style={formStyle}>
                     <div>
+                        <label style={labelStyle}>NAME</label>
+                        <input type="text" name="name" value={formData.name} onChange={handleChange} placeholder="Enter your name" required style={inputStyle} />
+                    </div>
+
+                    <div>
+                        <label style={labelStyle}>USERNAME</label>
+                        <input type="text" name="username" value={formData.username} onChange={handleChange} placeholder="Enter your username" required style={inputStyle} />
+                    </div>
+
+                    <div>
                         <label style={labelStyle}>EMAIL</label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={formData.email}
-                            onChange={handleChange}
-                            placeholder="Enter your email"
-                            required
-                            style={inputStyle}
-                        />
+                        <input type="email" name="email" value={formData.email} onChange={handleChange} placeholder="example@gmail.com" required style={inputStyle} />
                     </div>
 
                     <div>
                         <label style={labelStyle}>PASSWORD</label>
-                        <input
-                            type="password"
-                            name="password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            placeholder="Enter your password"
-                            required
-                            style={inputStyle}
-                        />
+                        <input type="password" name="password" value={formData.password} onChange={handleChange} placeholder="Enter your password" required style={inputStyle} />
                     </div>
 
                     <button
@@ -79,19 +88,18 @@ export default function Login() {
                         onMouseOver={(e) => e.target.style.backgroundColor = '#ccc'}
                         onMouseOut={(e) => e.target.style.backgroundColor = '#fff'}
                     >
-                        SIGN IN
+                        REGISTER
                     </button>
                 </form>
 
                 <p style={footerTextStyle}>
-                    NOT A MEMBER? <span style={linkStyle} onClick={() => navigate('/register')}>REGISTER</span>
+                    ALREADY A MEMBER? <span style={linkStyle} onClick={() => navigate('/login')}>LOGIN</span>
                 </p>
             </div>
         </div>
     );
 }
 
-// STYLES (Isti kao za Registration za savršen sklad)
 const containerStyle = { display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#000', color: '#fff', fontFamily: 'sans-serif' };
 const formWrapperStyle = { width: '100%', maxWidth: '400px', padding: '40px', border: '1px solid #222' };
 const logoStyle = { textAlign: 'center', letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '10px' };
