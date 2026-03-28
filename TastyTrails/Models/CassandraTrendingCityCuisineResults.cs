@@ -20,7 +20,7 @@ namespace TastyTrails.Models
         public int RestaurantId { get; set; }
         [Column("name")]
         public string? Name { get; set; }
-        [Column("cuisine")]
+        [Column("latitude")]
         public double Latitude { get; set; }
         [Column("longitude")]
         public double Longitude { get; set; }

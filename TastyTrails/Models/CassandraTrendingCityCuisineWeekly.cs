@@ -8,7 +8,7 @@ namespace TastyTrails.Models
         [Column("city")]
         public string? City { get; set; }
         [PartitionKey(1)]
-        [Column("cusine")]
+        [Column("cuisine")]
         public string? Cuisine { get; set; }
         [PartitionKey(2)]
         [Column("week_start")]

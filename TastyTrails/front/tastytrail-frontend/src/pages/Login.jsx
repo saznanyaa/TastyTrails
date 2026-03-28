@@ -24,14 +24,26 @@ export default function Login() {
 
             if (response.ok) {
                 const data = await response.json();
-                // Čuvamo podatke da bi Navbar znao da smo ulogovani
-                localStorage.setItem("authToken", data.token);
-                localStorage.setItem("userId", data.userId || "u1");
+                console.log("Šta je stiglo sa servera:", data); // Proveri ovo u F12 konzoli!
 
-                alert("Welcome back!");
-                navigate('/home');
-                window.location.reload(); // Osvežavamo da Navbar vidi promenu
-            } else {
+                // Proveravamo sve moguće varijante ključa
+                const receivedId = data.userId || data.UserId || data.id || data.Id;
+                const receivedToken = data.token || data.Token;
+
+                if (receivedId) {
+                    localStorage.setItem("authToken", receivedToken);
+                    localStorage.setItem("userId", receivedId);
+
+                    alert("Welcome back!");
+                    navigate(`/profile/${receivedId}`);
+                    window.location.reload();
+                } else {
+                    // Ako uđe ovde, pogledaj u F12 konzolu šta piše u "Šta je stiglo sa servera"
+                    console.error("ID nije pronađen u objektu:", data);
+                    alert("Server nije poslao ID korisnika. Pogledaj konzolu!");
+                }
+            }
+            else {
                 alert("Invalid username or password.");
             }
         } catch (err) {

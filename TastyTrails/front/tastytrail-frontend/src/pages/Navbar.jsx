@@ -1,4 +1,4 @@
-﻿import { Link } from "react-router-dom";
+﻿import { Link, useNavigate } from "react-router-dom"; // Dodali smo useNavigate
 import { useState, useEffect } from "react";
 
 const styles = {
@@ -15,7 +15,8 @@ const styles = {
     logo: {
         margin: 0,
         color: "white",
-        letterSpacing: "2px"
+        letterSpacing: "2px",
+        textTransform: "uppercase"
     },
     link: {
         marginLeft: "20px",
@@ -40,21 +41,27 @@ const styles = {
 };
 
 export default function Navbar() {
-    const [user, setUser] = useState(null);
+    const [userToken, setUserToken] = useState(null);
+    const [userId, setUserId] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
+        // Proveravamo podatke svaki put kad se Navbar učita
         const token = localStorage.getItem("authToken");
         const storedUserId = localStorage.getItem("userId");
-        if (token && storedUserId) {
-            setUser({ name: "David", id: storedUserId });
-        }
+
+        setUserToken(token);
+        setUserId(storedUserId);
     }, []);
 
     const handleLogout = () => {
         localStorage.removeItem("authToken");
         localStorage.removeItem("userId");
-        setUser(null);
-        window.location.href = "/home";
+        localStorage.removeItem("username"); // Brišemo i potencijalno ime
+        setUserToken(null);
+        setUserId(null);
+        navigate("/home");
+        window.location.reload(); // Osvežavamo da aplikacija "shvati" da smo izašli
     };
 
     return (
@@ -67,13 +74,14 @@ export default function Navbar() {
                 <Link to="/home" style={styles.link}>Home</Link>
                 <Link to="/explore" style={styles.link}>Explore</Link>
 
-                {user ? (
-                    <Link to={`/profile/${user.id}`} style={styles.link}>Profile</Link>
+                {/* Dinamički link za profil */}
+                {userToken && userId ? (
+                    <Link to={`/profile/${userId}`} style={styles.link}>Profile</Link>
                 ) : (
                     <Link to="/register" style={styles.link}>Profile</Link>
                 )}
 
-                {!user && (
+                {!userToken ? (
                     <Link to="/login">
                         <button
                             style={styles.button}
@@ -83,19 +91,15 @@ export default function Navbar() {
                             Login
                         </button>
                     </Link>
-                )}
-
-                {user && (
-                    <>
-                        <button
-                            onClick={handleLogout}
-                            style={{ ...styles.button, backgroundColor: "transparent", color: "white", border: "1px solid white" }}
-                            onMouseOver={(e) => { e.target.style.backgroundColor = "white"; e.target.style.color = "black"; }}
-                            onMouseOut={(e) => { e.target.style.backgroundColor = "transparent"; e.target.style.color = "white"; }}
-                        >
-                            Logout
-                        </button>
-                    </>
+                ) : (
+                    <button
+                        onClick={handleLogout}
+                        style={{ ...styles.button, backgroundColor: "transparent", color: "white", border: "1px solid white" }}
+                        onMouseOver={(e) => { e.target.style.backgroundColor = "white"; e.target.style.color = "black"; }}
+                        onMouseOut={(e) => { e.target.style.backgroundColor = "transparent"; e.target.style.color = "white"; }}
+                    >
+                        Logout
+                    </button>
                 )}
             </div>
         </nav>

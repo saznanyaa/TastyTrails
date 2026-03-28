@@ -9,8 +9,8 @@ using TastyTrails.Models.DTOs;
 namespace TastyTrails.Controllers
 {
     [ApiController]
-    [Route("api/users")]
-    [Authorize]
+    [Route("api/user")]
+    //[Authorize]
     public class UsersController:ControllerBase
     {
         private readonly MongoService _mongo;
@@ -30,13 +30,21 @@ namespace TastyTrails.Controllers
         [HttpGet("{id}")]
         public async Task<IActionResult> GetUserById(Guid id)
         {
-            var userIdFromToken = GetUserIdFromToken();
-            if(userIdFromToken != id) return Forbid();
-            
-            var user = await _mongo.GetUserById(id);
-            if(user == null) return NotFound();
+            try
+            {
+                var user = await _mongo.GetUserById(id);
 
-            return Ok(user);
+                if (user == null)
+                {
+                    return NotFound(new { message = "Korisnik nije pronadjen.", trazeniId = id });
+                }
+
+                return Ok(user);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
 
         [HttpPut("{id}")]

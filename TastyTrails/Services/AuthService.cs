@@ -30,9 +30,10 @@ namespace TastyTrails.Services
             _users = database.GetCollection<MongoUser>("users");
         }
 
-        public async Task<string> Login(LoginDto dto)
+        
+        public async Task<object> Login(LoginDto dto)
         {
-            var user = await _users
+            var user = await _users // _users ovde postoji u servisu
                 .Find(u => u.Email == dto.Email)
                 .FirstOrDefaultAsync();
 
@@ -44,7 +45,14 @@ namespace TastyTrails.Services
             if (result == PasswordVerificationResult.Failed)
                 throw new Exception("Invalid credentials");
 
-            return GenerateToken(user);
+            var token = GenerateToken(user);
+
+            // VRATI OBJEKAT KOJI SADRŽI OBA PODATKA
+            return new
+            {
+                Token = token,
+                UserId = user.Id.ToString()
+            };
         }
 
         private string GenerateToken(MongoUser user)

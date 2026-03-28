@@ -1,156 +1,231 @@
-﻿import { useState, useEffect, useRef } from 'react'; // <--- DODALI SMO useRef
+﻿import { useState, useEffect, useRef } from 'react';
+import { useParams } from 'react-router-dom';
+import '../Profile.css';
 
 export default function Profile() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
-
-    // OVO SMO DODALI: State za prikaz slike profilu (lokalno, pre slanja na server)
     const [profileImage, setProfileImage] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    // OVO SMO DODALI: Referenca ka sakrivenom file inputu
+    // Lista recenzija (inicijalno prazna, puni se sa backend-a ili nakon Save)
+    const [reviews, setReviews] = useState([]);
+
+    const [newReview, setNewReview] = useState({
+        name: '',
+        location: '',
+        cuisine: '',
+        rating: '',
+        comment: ''
+    });
+
     const fileInputRef = useRef(null);
-
-    const { id } = useParams(); // Ovde si ga nazvao 'id'
+    const { id } = useParams();
 
     useEffect(() => {
-        fetch(`https://localhost:7216/api/get/user/${id}`)
-            .then(res => res.json())
-            .then(data => {
-                setUser(data);
-                if (data.profileImageUrl) {
-                    setProfileImage(data.profileImageUrl);
+        const fetchData = async () => {
+            setLoading(true);
+            const token = localStorage.getItem("token");
+
+            try {
+                // 1. Prvo uzimamo podatke o korisniku
+                const userRes = await fetch('https://localhost:7216/api/get/user/${id}', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (userRes.ok) {
+                    const userData = await userRes.json();
+                    setUser(userData);
                 }
+
+                // 2. OVO JE KLJUČNO: Uzimamo njegove recenzije iz Monga
+                console.log("Provera ID-a:", id); // Da vidimo da li id uopšte postoji
+                const url = `https://localhost:7216/api/get/reviews/${id}/mongouser/reviews`;
+                console.log("Finalni URL koji šaljem:", url);
+                const reviewsRes = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (reviewsRes.ok) {
+                    const reviewsData = await reviewsRes.json();
+                    // Mapiramo podatke ako se imena polja razlikuju (npr. Comment -> comment)
+                    setReviews(reviewsData);
+                }
+
+            } catch (err) {
+                console.error("Greška pri učitavanju:", err);
+            } finally {
                 setLoading(false);
-            })
-            .catch(err => console.error(err));
+            }
+        };
+
+        if (id) fetchData();
     }, [id]);
 
-    // OVO SMO DODALI: Funkcija koja se poziva kada se izabere fajl
-    const handleFileChange = (event) => {
-        const file = event.target.files[0];
-        if (file && file.type.startsWith('image/')) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                // Prikazujemo sliku lokalno (kao Preview)
-                setProfileImage(reader.result);
+    const handleRatingChange = (e) => {
+        let val = e.target.value;
 
-                // --- OVDE TREBA DA POŠALJEŠ SLIKU NA SERVER ---
-                // uploadImageToServer(file); 
-            };
-            reader.readAsDataURL(file);
-        } else {
-            alert("Molimo izaberite ispravan format slike.");
+        // Ako je polje prazno, dozvoli brisanje
+        if (val === '') {
+            setNewReview({ ...newReview, rating: '' });
+            return;
+        }
+
+        // Pretvaramo u ceo broj (integer)
+        const numericVal = parseInt(val, 10);
+
+        // Validacija opsega 1-5
+        if (numericVal > 5) val = '5';
+        else if (numericVal < 1) val = '1';
+        else val = numericVal.toString();
+
+        setNewReview({ ...newReview, rating: val });
+    };
+
+    const handleSaveReview = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const generatedId = crypto.randomUUID(); // ISTI ID za sve baze
+
+            console.log("!!! GENERISANI ID ZA SVE BAZE !!! ->", generatedId);
+
+            // 1. KREIRAMO RESTORAN (Neo4j)
+            const resResponse = await fetch(`https://localhost:7216/api/post/restaurant`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    Id: generatedId,
+                    Name: newReview.name,
+                    Location: newReview.location, // Grad
+                    Cuisine: newReview.cuisine
+                })
+            });
+
+            if (!resResponse.ok) throw new Error("Neo4j greška.");
+
+            // 2. POPUNJAVAMO CASSANDRA LOOKUP (Da backend ne bi bacio Exception)
+            await fetch(`https://localhost:7216/api/post/cassandra/lookup`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    Id: generatedId,
+                    Name: newReview.name,
+                    City: newReview.location,
+                    Cuisine: newReview.cuisine,
+                    Latitude: 0,
+                    Longitude: 0
+                })
+            });
+
+            // 3. ŠALJEMO RECENZIJU (Sada će GetCityAndCuisine pronaći podatke!)
+            const reviewResponse = await fetch(`https://localhost:7216/api/post/restaurants/${generatedId}/review?userId=${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    rating: parseInt(newReview.rating, 10),
+                    comment: newReview.comment
+                })
+            });
+
+            if (reviewResponse.ok) {
+                alert("Uspešno sačuvano u sve tri baze!");
+                // ... resetuj formu kao i ranije
+            }
+
+        } catch (err) {
+            alert("Greška: " + err.message);
         }
     };
 
-    // OVO SMO DODALI: Funkcija koja se poziva na klik kruga
-    const handleAvatarClick = () => {
-        // Ovo simulira klik na sakriveni file input
-        fileInputRef.current.click();
-    };
-
-    if (loading) return <div style={{ textAlign: 'center', marginTop: '50px' }}>Učitavanje...</div>;
+    if (loading) return <div className="profile-page"><h2>Učitavanje...</h2></div>;
 
     return (
-        <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
+        <div className="profile-page">
+            <input type="file" ref={fileInputRef} onChange={(e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => setProfileImage(reader.result);
+                    reader.readAsDataURL(file);
+                }
+            }} accept="image/*" style={{ display: 'none' }} />
 
-            {/* OVO SMO DODALI: Sakriveni input za fajlove */}
-            <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                accept="image/*"
-                style={{ display: 'none' }}
-            />
-
-            <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'flex-start',
-                marginBottom: '40px',
-                borderBottom: '1px solid #eee',
-                paddingBottom: '20px'
-            }}>
-
-                {/* IZMENJEN KRUG: Dodat onClick i prikaz slike */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                    <div
-                        onClick={handleAvatarClick} // <--- KLIK NA KRUG
-                        style={{
-                            width: '80px', height: '80px', borderRadius: '50%',
-                            backgroundColor: '#ddd', display: 'flex', alignItems: 'center',
-                            justifyContent: 'center', fontSize: '30px',
-                            cursor: 'pointer', // <--- POKAZIVAČ RUKA
-                            overflow: 'hidden', // <--- DA SLIKA NE IZLAZI VAN
-                            border: '2px solid transparent',
-                            transition: 'border-color 0.2s'
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.borderColor = '#007bff'}
-                        onMouseOut={(e) => e.currentTarget.style.borderColor = 'transparent'}
-                        title="Klikni da promeniš sliku"
-                    >
-                        {/* Prikazujemo sliku ako postoji, inače ikonicu */}
-                        {profileImage ? (
-                            <img src={profileImage} alt="Profil" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                        ) : (
-                            "👤"
-                        )}
+            {/* GORNJI DEO PROFILA */}
+            <div className="top-section-container">
+                <div className="left-info-box">
+                    <div className="avatar-circle" onClick={() => fileInputRef.current.click()}>
+                        {profileImage ? <img src={profileImage} className="profile-img-element" /> : <span style={{ fontSize: '50px' }}>👤</span>}
                     </div>
-                    <div>
-                        <h2 style={{ margin: 0 }}>{user.username}</h2>
-                        <p style={{ color: '#666', margin: '5px 0 0' }}>{user.bio || "Nema biografije"}</p>
+                    <div className="user-text-container">
+                        <h2 className="username-text">{(user?.username || "USER").toUpperCase()}</h2>
+                        <p className="email-text">{user?.email}</p>
                     </div>
                 </div>
-
-                {/* ... ostatak Followers/Following dela ostaje isti ... */}
-                <div style={{ display: 'flex', gap: '30px', cursor: 'pointer', flex: 1, justifyContent: 'center' }}>
-                    <div style={{ textAlign: 'center' }} onClick={() => alert("Prikazujem pratioce...")}>
-                        <strong style={{ fontSize: '20px', display: 'block' }}>{user.followersCount || 0}</strong>
-                        <span style={{ color: '#888' }}>Followers</span>
-                    </div>
-                    <div style={{ textAlign: 'center' }} onClick={() => alert("Prikazujem koga pratiš...")}>
-                        <strong style={{ fontSize: '20px', display: 'block' }}>{user.followingCount || 0}</strong>
-                        <span style={{ color: '#888' }}>Following</span>
-                    </div>
+                <div className="center-stats-box">
+                    <div className="stat-item"><strong className="stat-number">{reviews.length}</strong><span className="stat-label">Recenzije</span></div>
+                    <div className="stat-item"><strong className="stat-number">{user?.followersCount || 0}</strong><span className="stat-label">Followers</span></div>
                 </div>
-
-                <div style={{ width: '100px' }}></div>
+                <div className="right-balance-box"></div>
             </div>
 
-            {/* ... ostatak liste restorana ostaje isti ... */}
-            <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-                <h3 style={{ textAlign: 'center', marginBottom: '20px' }}>Moje recenzije</h3>
+            {/* SEKCIJA RECENZIJA */}
+            <div className="content-section">
+                <div className="horizontal-divider"></div>
+                <h3 className="section-title">MOJE RECENZIJE</h3>
+                <button className="add-review-btn" onClick={() => setIsModalOpen(true)}>+ DODAJ RECENZIJU</button>
 
-                {user.visitedRestaurants && user.visitedRestaurants.length > 0 ? (
-                    user.visitedRestaurants.map((restoran, index) => (
-                        <div
-                            key={index}
-                            onClick={() => window.location.href = `/explore?lat=${restoran.lat}&lng=${restoran.lng}`}
-                            style={{
-                                padding: '15px',
-                                border: '1px solid #ddd',
-                                borderRadius: '8px',
-                                marginBottom: '10px',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                                transition: 'background 0.2s'
-                            }}
-                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#f9f9f9'}
-                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#fff'}
-                        >
-                            <div>
-                                <h4 style={{ margin: '0 0 5px' }}>{restoran.name}</h4>
-                                <p style={{ margin: 0, color: '#ffcc00' }}>{"★".repeat(restoran.rating)}</p>
+                {/* PRIKAZ KARTICA RECENZIJA */}
+                <div className="reviews-grid">
+                    {reviews.map((rev) => (
+                        <div key={rev.id} className="review-card">
+                            <div className="review-rating">
+                                ⭐ {rev.rating}
                             </div>
-                            <span style={{ color: '#007bff' }}>Pogledaj na mapi →</span>
+                            <h4>{rev.name}</h4>
+                            <p className="review-cuisine">{rev.cuisine || 'Vrsta hrane nije navedena'}</p>
+                            <p className="review-comment">{rev.comment}</p>
                         </div>
-                    ))
-                ) : (
-                    <p style={{ textAlign: 'center', color: '#999' }}>Još uvek niste ostavili nijednu recenziju.</p>
-                )}
+                    ))}
+                </div>
             </div>
+
+            {/* MODAL */}
+            {isModalOpen && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <button className="close-modal" onClick={() => setIsModalOpen(false)}>&times;</button>
+                        <h2>NOVA RECENZIJA</h2>
+                        <input className="modal-input" placeholder="Ime restorana..." value={newReview.name} onChange={(e) => setNewReview({ ...newReview, name: e.target.value })} />
+                        <input className="modal-input" placeholder="Lokacija (Niš)..." value={newReview.location} onChange={(e) => setNewReview({ ...newReview, location: e.target.value })} />
+                        <input className="modal-input" placeholder="Vrsta hrane..." value={newReview.cuisine} onChange={(e) => setNewReview({ ...newReview, cuisine: e.target.value })} />
+                        <input
+                            className="modal-input"
+                            type="number"
+                            step="1"
+                            placeholder="Ocena (1-5)"
+                            value={newReview.rating}
+                            onKeyPress={(e) => {
+                                // Dozvoljavamo SAMO brojeve od 0-9
+                                if (!/[0-9]/.test(e.key)) {
+                                    e.preventDefault();
+                                }
+                            }}
+                            onChange={handleRatingChange}
+                        />
+                        <textarea className="modal-input" placeholder="Komentar..." rows="4" value={newReview.comment} onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}></textarea>
+                        <div className="modal-actions">
+                            <button className="save-btn" onClick={handleSaveReview}>SAČUVAJ</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

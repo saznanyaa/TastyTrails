@@ -6,7 +6,7 @@ namespace TastyTrails.Models;
 public class MongoUser
 {
     [BsonId]
-    [BsonRepresentation(BsonType.String)]
+    [BsonGuidRepresentation(GuidRepresentation.Standard)]
     public Guid Id { get; set; }
 
     [BsonElement("name")]

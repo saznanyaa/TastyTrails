@@ -1,23 +1,25 @@
-using TastyTrails.Configurations;
+﻿using TastyTrails.Configurations;
 using TastyTrails.Services;
 using Neo4j.Driver;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using MongoDB.Bson;
+
 
 var builder = WebApplication.CreateBuilder(args);
-// Add services to the container.
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-//builder.Services.AddOpenApi();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+// --- MONGO PODEŠAVANJA ---
 builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("MongoSettings"));
+// OSTAVI SAMO OVU JEDNU LINIJU ZA MONGO:
 builder.Services.AddSingleton<MongoService>();
 
+// --- NEO4J PODEŠAVANJA ---
 builder.Services.AddScoped<INeo4jService, Neo4jService>();
 builder.Services.Configure<Neo4jSettings>(builder.Configuration.GetSection("Neo4jSettings"));
 builder.Services.AddSingleton<IDriver>(sp =>
@@ -26,11 +28,9 @@ builder.Services.AddSingleton<IDriver>(sp =>
     return GraphDatabase.Driver(settings.Uri, AuthTokens.Basic(settings.User, settings.Password));
 });
 
-
 builder.Services.AddScoped<AuthService>();
-builder.Services.AddScoped<MongoService>();
-//builder.Services.AddScoped<CassandraService>();
 
+// --- JWT PODEŠAVANJA ---
 var jwtSettings = builder.Configuration
     .GetSection("JwtSettings")
     .Get<JwtSettings>() ?? throw new Exception("JwtSettings section missing!");
@@ -48,16 +48,13 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-
         ValidIssuer = jwtSettings.Issuer,
         ValidAudience = jwtSettings.Audience,
-
-        IssuerSigningKey = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(jwtSettings.SecretKey!)
-        )
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSettings.SecretKey!))
     };
 });
 
+// --- CORS PODEŠAVANJA ---
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend",
@@ -71,19 +68,23 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// --- ISPRAVAN REDOSLED MIDDLEWARE-A ---
+
+// 1. Prvo redirekcija
+app.UseHttpsRedirection();
+
+// 2. OBAVEZNO CORS pre Auth
 app.UseCors("AllowFrontend");
 
-app.UseAuthentication();
-app.UseAuthorization();
-
+// 3. Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
+// 4. Autentikacija pa Autorizacija (SAMO JEDNOM!)
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();

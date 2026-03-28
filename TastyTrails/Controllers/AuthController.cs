@@ -20,10 +20,18 @@ namespace TastyTrails.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> LoginUser(LoginDto dto)
         {
-            var token = await _authService.Login(dto);
-            return Ok(new { token });
-        }
+            try
+            {
+                // 'authResult' će sada biti onaj objekat koji sadrži Token i UserId
+                var authResult = await _authService.Login(dto);
 
+                return Ok(authResult);
+            }
+            catch (Exception ex)
+            {
+                return Unauthorized(new { message = ex.Message });
+            }
+        }
 
     }     
 }

@@ -178,6 +178,9 @@ namespace TastyTrails.Controllers
             return Ok(checkin);
         }
 
+        //------------------------------------------------------------------------------
+       
+
         //-------------------------------------------------------------------------------
         [HttpPost("user")]
         public async Task<IActionResult> CreateUser([FromBody] NeoUserNode user)
@@ -190,10 +193,25 @@ namespace TastyTrails.Controllers
         [HttpPost("restaurant")]
         public async Task<IActionResult> CreateRestaurant([FromBody] NeoRestaurantNode restaurant)
         {
-            await _neo4jService.CreateRestaurantNodeAsync(restaurant);
-            return Ok($"Restoran {restaurant.Name} uspešno kreiran/ažuriran.");
-        }
+            // Ako Id slučajno fali, generiši ga
+            if (string.IsNullOrEmpty(restaurant.Id))
+            {
+                restaurant.Id = Guid.NewGuid().ToString();
+            }
 
+            // Poziv servisu (ovo već imaš)
+            await _neo4jService.CreateRestaurantNodeAsync(restaurant);
+
+            // OVO JE POPRAVKA: Vraćamo objekat koji React može da pročita
+            return Ok(new
+            {
+                id = restaurant.Id,
+                name = restaurant.Name,
+                location = restaurant.Location,
+                cuisine = restaurant.Cuisine,
+                message = "Restoran uspešno kreiran"
+            });
+        }
         //--------------------------------------------------------------------------------
         [HttpPost("connect")]
         public async Task<IActionResult> Connect(string userId, string restaurantId, string type = "LIKE")
@@ -256,6 +274,19 @@ namespace TastyTrails.Controllers
             await _neo4jService.UserLikesCuisineAsync(userId, cuisineId);
             return Ok(new { Message = "Veza LIKES_CUISINE uspešno kreirana." });
         }
-
+        //--------------------------------------------------------------------------------------
+        [HttpPost("cassandra/lookup")]
+        public async Task<IActionResult> PostToLookup([FromBody] RestaurantLookup lookup)
+        {
+            try 
+            {
+                await _cassandra.InsertRestaurantLookup(lookup);
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
     }
 }

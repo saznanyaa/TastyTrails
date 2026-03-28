@@ -1,0 +1,254 @@
+﻿/* src/Profile.css */
+
+.profile-page {
+    background-color: #000;
+    color: #fff;
+    min-height: 100vh;
+    padding: 100px 50px;
+    font-family: sans-serif;
+}
+
+/* Gornja sekcija i ostali stilovi ostaju isti... */
+.top-section-container {
+    display: flex;
+    align-items: flex-start;
+    width: 100%;
+    margin-bottom: 60px;
+}
+
+.left-info-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    padding-left: 60px;
+}
+
+.avatar-circle {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    background-color: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    overflow: hidden;
+    border: 1px solid #222;
+    transition: transform 0.2s ease;
+}
+
+    .avatar-circle:hover {
+        transform: scale(1.02);
+        border-color: #444;
+    }
+
+.profile-img-element {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.user-text-container {
+    text-align: center;
+    margin-top: 15px;
+    width: 150px;
+}
+
+.username-text {
+    margin: 0;
+    font-size: 20px;
+    letter-spacing: 2px;
+    font-weight: bold;
+}
+
+.email-text {
+    color: #555;
+    margin-top: 5px;
+    font-size: 13px;
+}
+
+.center-stats-box {
+    display: flex;
+    gap: 60px;
+    justify-content: center;
+    align-items: center;
+    height: 150px;
+    flex: 1;
+}
+
+.stat-number {
+    display: block;
+    font-size: 28px;
+    font-weight: bold;
+    color: #fff;
+}
+
+.stat-label {
+    font-size: 11px;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 5px;
+}
+
+.right-balance-box {
+    flex: 1;
+}
+
+/* Donja sekcija */
+.content-section {
+    width: 100%;
+    margin-top: 40px;
+    text-align: center;
+}
+
+.horizontal-divider {
+    height: 1px;
+    background-color: #111;
+    width: 100%;
+    margin-bottom: 40px;
+}
+
+.section-title {
+    letter-spacing: 4px;
+    color: #333;
+    font-size: 16px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+/* STILOVI ZA KARTICE RECENZIJA */
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 20px;
+    margin-top: 30px;
+    padding: 0 20px;
+}
+
+.review-card {
+    background: #0a0a0a;
+    border: 1px solid #1a1a1a;
+    padding: 20px;
+    text-align: left;
+    border-radius: 4px;
+    transition: 0.3s;
+}
+
+    .review-card:hover {
+        border-color: #333;
+    }
+
+    .review-card h4 {
+        margin: 0;
+        font-size: 18px;
+        letter-spacing: 1px;
+    }
+
+.review-cuisine {
+    color: #555;
+    font-size: 12px;
+    text-transform: uppercase;
+    margin: 5px 0;
+}
+
+.review-rating {
+    color: #ffd700; /* Zlatna boja za zvezdicu */
+    font-weight: bold;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.review-comment {
+    color: #bbb;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+/* Dugmad */
+.add-review-btn, .save-btn {
+    background-color: #000;
+    color: #fff;
+    border: 1px solid #fff;
+    padding: 12px 30px;
+    font-weight: bold;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: 0.3s;
+    text-transform: uppercase;
+}
+
+    .add-review-btn:hover, .save-btn:hover {
+        background-color: #fff;
+        color: #000;
+    }
+
+/* Modal stilovi ostaju isti, samo smo dodali podršku za decimalni input */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(3px);
+}
+
+.modal-content {
+    background: #111;
+    padding: 40px 30px 30px 30px;
+    border-radius: 8px;
+    width: 400px;
+    border: 1px solid #222;
+    position: relative;
+    box-shadow: 0 0 30px rgba(0,0,0,0.7);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.save-btn {
+    /* Uklanjamo margin-top od ranije da bi modal-actions kontrolisao razmak */
+    margin-top: 0;
+    min-width: 150px; /* Opciono: da dugme ima finu širinu */
+}
+
+.close-modal {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 26px;
+    cursor: pointer;
+}
+
+.modal-input {
+    width: 100%; /* Inputi će se rastegnuti do ivica paddinga */
+    padding: 12px;
+    margin: 8px 0;
+    background: #000;
+    border: 1px solid #333;
+    color: #fff;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-family: sans-serif;
+}
+
+/* Sakrivanje strelica na number inputu */
+input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type=number] {
+    -moz-appearance: textfield;
+}
