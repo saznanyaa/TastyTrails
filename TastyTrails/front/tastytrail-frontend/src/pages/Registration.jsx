@@ -18,7 +18,6 @@ export default function Registration() {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        // Podaci moraju da se zovu isto kao u RegisterDto na backendu
         const registerData = {
             name: formData.name,
             username: formData.username,
@@ -27,7 +26,7 @@ export default function Registration() {
         };
 
         try {
-            const response = await fetch('https://localhost:7216/api/post/Register', { // Proveri da li je putanja /api/post ili samo /post
+            const response = await fetch('http://localhost:5146/api/post/Register', { 
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
