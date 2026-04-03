@@ -150,6 +150,21 @@ namespace TastyTrails.Services
             return user;
         }
 
+        public async Task<List<MongoUser>> SearchUsersAsync(string username)
+        {
+            // Koristimo Regex za delimično poklapanje, "i" opcija za case-insensitive
+            var filter = Builders<MongoUser>.Filter.Regex(u => u.Username, new BsonRegularExpression(username, "i"));
+
+            // Pretražujemo Users kolekciju koju si definisao gore u konstruktoru
+            return await Users
+                .Find(filter)
+                .Project<MongoUser>(Builders<MongoUser>.Projection
+                    .Include(u => u.Id)
+                    .Include(u => u.Username)
+                    .Include(u => u.Email)) // Možeš dodati polja koja su ti bitna za search
+                .Limit(10)
+                .ToListAsync();
+        }
         public async Task<bool> UpdateUsernameOrEmail(Guid id, UpdateDTO dto)
         {
             var update = Builders<MongoUser>.Update.Set(u => u.Email, dto.Email)

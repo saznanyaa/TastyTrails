@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using TastyTrails.Models;
@@ -10,7 +10,7 @@ namespace TastyTrails.Controllers
 {
     [ApiController]
     [Route("api/user")]
-    //[Authorize]
+    [Authorize]
     public class UsersController:ControllerBase
     {
         private readonly MongoService _mongo;
@@ -179,34 +179,26 @@ namespace TastyTrails.Controllers
             }
         }
 
-        [HttpPost("{targetId}")]
-        public async Task<IActionResult> Follow(Guid targetId)
+        [HttpPost("follow/{targetId}")]
+        public async Task<IActionResult> Follow([FromRoute] Guid targetId) // Dodato [FromRoute]
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized();
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized("Korisnik nije prepoznat iz tokena");
 
             var currentId = Guid.Parse(userIdClaim);
-
             await _mongo.Follow(currentId, targetId);
-
-            return Ok(new { message = "Followed successfully." });
+            return Ok(new { message = "Followed successfully" });
         }
 
-        [HttpDelete("delete/{targetId}")]
+        [HttpPost("unfollow/{targetId}")] // Bolje POST za akciju, ili DELETE
         public async Task<IActionResult> Unfollow(Guid targetId)
         {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized();
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized();
 
             var currentId = Guid.Parse(userIdClaim);
-
             await _mongo.Unfollow(currentId, targetId);
-
-            return Ok(new { message = "Unfollowed successfully." });
+            return Ok(new { message = "Unfollowed successfully" });
         }
 
         [HttpPost("connect/{restaurantId}")]
