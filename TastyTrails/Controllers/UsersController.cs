@@ -180,17 +180,19 @@ namespace TastyTrails.Controllers
         }
 
         [HttpPost("follow/{targetId}")]
-        public async Task<IActionResult> Follow([FromRoute] Guid targetId) // Dodato [FromRoute]
+        public async Task<IActionResult> Follow([FromRoute] Guid targetId)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             if (string.IsNullOrEmpty(userIdClaim)) return Unauthorized("Korisnik nije prepoznat iz tokena");
 
             var currentId = Guid.Parse(userIdClaim);
             await _mongo.Follow(currentId, targetId);
-            return Ok(new { message = "Followed successfully" });
+            await _neo4jService.FollowUserAsync(currentId.ToString(), targetId.ToString());
+           
+            return Ok(new { message = "Followed successfully", followerId = currentId, followedId = targetId });
         }
 
-        [HttpPost("unfollow/{targetId}")] // Bolje POST za akciju, ili DELETE
+        [HttpPost("unfollow/{targetId}")]
         public async Task<IActionResult> Unfollow(Guid targetId)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -198,7 +200,8 @@ namespace TastyTrails.Controllers
 
             var currentId = Guid.Parse(userIdClaim);
             await _mongo.Unfollow(currentId, targetId);
-            return Ok(new { message = "Unfollowed successfully" });
+            await _neo4jService.UnfollowUserAsync(currentId.ToString(), targetId.ToString());
+            return Ok(new { message = "Unfollowed successfully", followerId = currentId, followedId = targetId });
         }
 
         [HttpPost("connect/{restaurantId}")]

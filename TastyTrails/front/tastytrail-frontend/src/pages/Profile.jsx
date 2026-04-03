@@ -37,7 +37,7 @@ export default function Profile() {
             const authToken = localStorage.getItem("authToken");
 
             try {
-                const userRes = await fetch(`https://localhost:7216/api/get/user/${id}`, {
+                const userRes = await fetch(`http://localhost:5146/api/get/user/${id}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -58,7 +58,7 @@ export default function Profile() {
                     }
                 }
 
-                const reviewsRes = await fetch(`https://localhost:7216/api/get/reviews/${id}/mongouser/reviews`, {
+                const reviewsRes = await fetch(`http://localhost:5146/api/get/reviews/${id}/mongouser/reviews`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
@@ -82,7 +82,7 @@ export default function Profile() {
             if (searchTerm.trim().length > 1) {
                 const authToken = localStorage.getItem("authToken");
                 try {
-                    const res = await fetch(`https://localhost:7216/api/get/users/search?username=${searchTerm}`, {
+                    const res = await fetch(`http://localhost:5146/api/get/users/search?username=${searchTerm}`, {
                         headers: { 'Authorization': `Bearer ${authToken}` }
                     });
                     if (res.ok) {
@@ -111,7 +111,7 @@ export default function Profile() {
 
         // Određujemo endpoint na osnovu trenutnog isFollowing stanja
         const endpoint = isFollowing ? 'unfollow' : 'follow';
-        const url = `https://localhost:7216/api/post/user/${endpoint}?targetId=${id}`;
+        const url = `http://localhost:5146/api/post/user/${endpoint}?targetId=${id}`;
 
         try {
             const res = await fetch(url, {
@@ -173,7 +173,8 @@ export default function Profile() {
             const authToken = localStorage.getItem("authToken");
             const generatedId = crypto.randomUUID();
 
-            await fetch(`https://localhost:7216/api/post/restaurant`, {
+            //i ovo mi se ne svidja kako radi
+            await fetch(`http://localhost:5146/api/post/restaurant`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                 body: JSON.stringify({
@@ -184,7 +185,8 @@ export default function Profile() {
                 })
             });
 
-            const reviewResponse = await fetch(`https://localhost:7216/api/post/restaurants/${generatedId}/review?userId=${id}`, {
+            //oovo mora da se proveri!!!!
+            const reviewResponse = await fetch(`http://localhost:5146/api/post/restaurants/${generatedId}/review?userId=${id}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
                 body: JSON.stringify({

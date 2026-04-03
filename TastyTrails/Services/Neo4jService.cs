@@ -54,6 +54,35 @@ namespace TastyTrails.Services
             finally { await session.CloseAsync(); }
         }
 
+        public async Task FollowUserAsync(string followerId, string followedId)
+        {
+            var session = _driver.AsyncSession();
+            try
+            {
+                await session.ExecuteWriteAsync(async tx => {
+                    await tx.RunAsync(@"
+                MATCH (a:User {id: $fId}), (b:User {id: $bId})
+                MERGE (a)-[:FOLLOWS]->(b)",
+                        new { fId = followerId, bId = followedId });
+                Console.WriteLine($"Unfollow attempt: {followerId} -> {followedId}");
+                });
+            }
+            finally { await session.CloseAsync(); }
+        }
+
+        public async Task UnfollowUserAsync(string followerId, string followedId)
+        {
+            var session = _driver.AsyncSession(o => o.WithDatabase("neo4j"));
+            try
+            {
+                await session.ExecuteWriteAsync(async tx => {
+                    await tx.RunAsync("MATCH (a:User {id: $fId})-[r:FOLLOWS]->(b:User {id: $bId}) DELETE r",
+                        new { fId = followerId, bId = followedId });
+                });
+            }
+            finally { await session.CloseAsync(); }
+        }
+
         public async Task<NeoUserNode?> GetUserByIdAsync(string id)
         {
             var session = _driver.AsyncSession();
@@ -184,34 +213,6 @@ namespace TastyTrails.Services
             {
                 await tx.RunAsync(query, parameters);
             });
-        }
-
-        public async Task FollowUserAsync(string followerId, string followedId)
-        {
-            var session = _driver.AsyncSession();
-            try
-            {
-                await session.ExecuteWriteAsync(async tx => {
-                    await tx.RunAsync(@"
-                MATCH (a:User {id: $fId}), (b:User {id: $bId})
-                MERGE (a)-[:FOLLOWS]->(b)",
-                        new { fId = followerId, bId = followedId });
-                });
-            }
-            finally { await session.CloseAsync(); }
-        }
-
-        public async Task UnfollowUserAsync(string followerId, string followedId)
-        {
-            var session = _driver.AsyncSession();
-            try
-            {
-                await session.ExecuteWriteAsync(async tx => {
-                    await tx.RunAsync("MATCH (a:User {id: $fId})-[r:FOLLOWS]->(b:User {id: $bId}) DELETE r",
-                        new { fId = followerId, bId = followedId });
-                });
-            }
-            finally { await session.CloseAsync(); }
         }
 
         public async Task UserLikesCuisineAsync(string userId, string cuisineId)

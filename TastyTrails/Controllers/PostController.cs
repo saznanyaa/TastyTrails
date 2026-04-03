@@ -145,25 +145,8 @@ namespace TastyTrails.Controllers
             await _cassandra.PostRestaurantRating(id, userId, value);
             return Ok(new {RestaurantId = id, UserId = userId, RatingValue = value});
         }
-
-        //----------------------------------------------------------------------------
-        [HttpPost("restaurants/{id}/review")]
-        public async Task<IActionResult> PostRestaurantReview(Guid id, [FromQuery]Guid userId, [FromBody]MongoReview mongoReview)
-        {
-            var review = new CassandraRestaurantReview
-            {
-                RestaurantId = id,
-                UserId = userId,
-                ReviewedAt = DateTime.Now.ToUniversalTime()
-            };
-            await _cassandra.PostRestaurantReview(review);
-
-            var mReview = await _mongo.PostReview(id, userId, mongoReview.Rating, mongoReview.Comment);
-            return Ok($"Cassandra review: {review}, and Mongo review: {mReview}");
-        }
-
-
         
+
         //-------------------------------------------------------------------------------
         //[HttpPost("cuisine")]
         // public async Task<IActionResult> CreateCuisine([FromBody] CuisineNode cuisine)
