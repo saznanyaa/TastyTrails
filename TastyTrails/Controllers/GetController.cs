@@ -161,6 +161,19 @@ namespace TastyTrails.Controllers
             return Ok(r);
         }
 
+        [HttpGet("user/{id}")]
+        public async Task<IActionResult> GetUser(Guid id)
+        {
+            var user = await _mongo.GetUserById(id);
+
+            if (user == null)
+            {
+                return NotFound("Korisnik nije pronađen u MongoDB bazi.");
+            }
+
+            return Ok(user);
+        }
+
         [HttpGet("restaurants/nearme")]
         public async Task<IActionResult> GetRestaurantsNearMe([FromQuery]double lat, [FromQuery] double lng, [FromQuery]double radius=0.01)
         {
@@ -176,8 +189,19 @@ namespace TastyTrails.Controllers
             return Ok(r);
         }
 
+        //-----------------------------------------------------------------------
+        [HttpGet("users/search")] // Path: /api/get/users/search
+        public async Task<IActionResult> SearchUsers([FromQuery] string username)
+        {
+            if (string.IsNullOrWhiteSpace(username))
+                return Ok(new List<MongoUser>());
+
+            var results = await _mongo.SearchUsersAsync(username);
+            return Ok(results);
+        }
+
         //-----------users--------------------------------------------------------
-        [HttpGet("user/{id}")]
+        [HttpGet("get/user/{id}")]
         public async Task<IActionResult> GetUser(string id)
         {
             var user = await _neo4jService.GetUserByIdAsync(id);

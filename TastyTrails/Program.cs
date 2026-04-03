@@ -1,22 +1,54 @@
-﻿using TastyTrails.Configurations;
-using TastyTrails.Services;
-using Neo4j.Driver;
+﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
+using Microsoft.OpenApi.Models; // Dodaj ovo za OpenApiInfo i Security shemu
 using MongoDB.Bson;
+using Neo4j.Driver;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
+using TastyTrails.Configurations;
+using TastyTrails.Services;
 
+JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+
+// --- POPRAVLJEN SWAGGER DA IMA AUTHORIZE DUGME ---
+builder.Services.AddSwaggerGen(c =>
+{
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "TastyTrails API", Version = "v1" });
+
+    // Definisanje Bearer Security Sheme
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Description = "Unesite JWT token ovako: Bearer {vaš_token}",
+        Name = "Authorization",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer"
+    });
+
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            new string[] {}
+        }
+    });
+});
 
 // --- MONGO PODEŠAVANJA ---
 builder.Services.Configure<MongoSettings>(builder.Configuration.GetSection("MongoSettings"));
-// OSTAVI SAMO OVU JEDNU LINIJU ZA MONGO:
 builder.Services.AddSingleton<MongoService>();
 
 // --- NEO4J PODEŠAVANJA ---
@@ -42,10 +74,12 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = true,
-        ValidateAudience = true,
+        ValidateIssuer = false, //
+        ValidateAudience = false, //
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         ValidIssuer = jwtSettings.Issuer,
@@ -70,20 +104,17 @@ var app = builder.Build();
 
 // --- ISPRAVAN REDOSLED MIDDLEWARE-A ---
 
-// 1. Prvo redirekcija
 app.UseHttpsRedirection();
 
-// 2. OBAVEZNO CORS pre Auth
+// CORS mora pre Auth
 app.UseCors("AllowFrontend");
 
-// 3. Swagger
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-// 4. Autentikacija pa Autorizacija (SAMO JEDNOM!)
 app.UseAuthentication();
 app.UseAuthorization();
 
