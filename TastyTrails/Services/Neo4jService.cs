@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc.ViewEngines;
+﻿using Cassandra;
+using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Neo4j.Driver;
 using TastyTrails.Models;
 

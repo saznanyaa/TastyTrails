@@ -100,10 +100,20 @@ namespace TastyTrails.Controllers
                 Role = "user"
             };
 
+            string struserId = userId.ToString();
+
+            var neo4jUser = new NeoUserNode
+            {
+                Id = struserId,
+                Username = registerDto.Username
+            };
+
             mongoUser.PasswordHash = _passwordHasher.HashPassword(mongoUser, registerDto.Password);
             await _users.InsertOneAsync(mongoUser);
 
             await _cassandra.InsertUserAsync(cassandraUser);
+
+            await _neo4jService.CreateUserNodeAsync(neo4jUser);
 
             var token = _auth.GenerateTokenForUser(mongoUser);
             return Ok(new { message = "Registration successful", token = token});
@@ -177,17 +187,6 @@ namespace TastyTrails.Controllers
             };
             await _cassandra.PostRestaurantCheckin(checkin);
             return Ok(checkin);
-        }
-
-        //------------------------------------------------------------------------------
-       
-
-        //-------------------------------------------------------------------------------
-        [HttpPost("user")]
-        public async Task<IActionResult> CreateUser([FromBody] NeoUserNode user)
-        {
-            await _neo4jService.CreateUserNodeAsync(user);
-            return Ok($"Korisnik {user.Username} uspešno kreiran/ažuriran.");
         }
 
         //--------------------------------------------------------------------------------
