@@ -39,7 +39,7 @@ namespace TastyTrails.Controllers
             _users = database.GetCollection<MongoUser>("users");
         }
 
-        //it's a get, but it posts to cassandra so that's why it's here
+        //it's a get, but it posts to databases so that's why it's here
         [HttpGet("GetRestaurantsFromOverpass")]
         public async Task<IActionResult> ImportRestaurants(string city)
         {
@@ -49,6 +49,14 @@ namespace TastyTrails.Controllers
             {
                 await _cassandra.InsertRestaurantAsync(restaurant);
                 await _cassandra.InsertRestaurantCuisineAsync(restaurant);
+
+                await _neo4jService.CreateRestaurantNodeAsync(new NeoRestaurantNode
+                {
+                    Id = restaurant.Id.ToString(),
+                    Name = restaurant.Name,
+                    Location = restaurant.City,
+                    Cuisine = restaurant.Cuisine
+                });
 
                 var lookup = new RestaurantLookup
                 {
@@ -67,15 +75,7 @@ namespace TastyTrails.Controllers
             return Ok($"{restaurants.Count} restaurants inserted for {city}.");
         }
 
-        [HttpPost("PostUser")]
-        public async Task<IActionResult> PostUser(CassandraUser u)
-        {
-            u.Id = Guid.NewGuid();
-            await _cassandra.InsertUserAsync(u);
-
-            return Ok($"User {u.Username} inserted with {u.Id} id.");
-        }
-
+        //posts users to all 3 databases
         [HttpPost("Register")]
         public async Task<IActionResult> Register([FromBody]RegisterDto registerDto)
         {
@@ -119,6 +119,7 @@ namespace TastyTrails.Controllers
             
         }
 
+//---cassandra_analytics-----------------------------------------------------------------------------
         [HttpPost("{id}/view")]
         public async Task<IActionResult> PostRestaurantView(Guid id, [FromBody]Guid userId)
         {
@@ -132,20 +133,6 @@ namespace TastyTrails.Controllers
             await _cassandra.InsertRestaurantView(view);
 
             return Ok();
-        }
-        
-        //-----------------------------------------------------
-        [HttpPost("users/{userId}/saved/{restaurantId}")]
-        public async Task<IActionResult> PostUserSavedrestaurant(Guid userId, Guid restaurantId)
-        {
-            var saved = new CassandraSavedRestaurants
-            {
-                UserId = userId,
-                RestaurantId = restaurantId,
-                SavedAt = DateTime.Now.ToUniversalTime()
-            };
-            await _cassandra.InsertUserSavedRestaurants(saved);
-            return Ok(saved);
         }
 
         //----------------------------------------------------------------------------
@@ -174,51 +161,8 @@ namespace TastyTrails.Controllers
             return Ok($"Cassandra review: {review}, and Mongo review: {mReview}");
         }
 
-        //---restaurant_checkins-----------------------------------------------------
-        [HttpPost("restaurants/{id}/chekin")]
-        public async Task<IActionResult> PostRestaurantCheckin(Guid id, [FromQuery]Guid userId)
-        {
-            var checkin = new CassandraRestaurantCheckins
-            {
-                RestaurantId = id,
-                UserId = userId,
-                CheckedInAt = DateTime.Now.ToUniversalTime()
-            };
-            await _cassandra.PostRestaurantCheckin(checkin);
-            return Ok(checkin);
-        }
 
-        //--------------------------------------------------------------------------------
-        [HttpPost("restaurant")]
-        public async Task<IActionResult> CreateRestaurant([FromBody] NeoRestaurantNode restaurant)
-        {
-            // Ako Id slučajno fali, generiši ga
-            if (string.IsNullOrEmpty(restaurant.Id))
-            {
-                restaurant.Id = Guid.NewGuid().ToString();
-            }
-
-            // Poziv servisu (ovo već imaš)
-            await _neo4jService.CreateRestaurantNodeAsync(restaurant);
-
-            // OVO JE POPRAVKA: Vraćamo objekat koji React može da pročita
-            return Ok(new
-            {
-                id = restaurant.Id,
-                name = restaurant.Name,
-                location = restaurant.Location,
-                cuisine = restaurant.Cuisine,
-                message = "Restoran uspešno kreiran"
-            });
-        }
-        //--------------------------------------------------------------------------------
-        [HttpPost("connect")]
-        public async Task<IActionResult> Connect(string userId, string restaurantId, string type = "LIKE")
-        {
-            await _neo4jService.ConnectUserToRestaurantAsync(userId, restaurantId, type);
-            return Ok($"Veza [{type}] uspostavljena između korisnika {userId} i restorana {restaurantId}.");
-        }
-
+        
         //-------------------------------------------------------------------------------
         //[HttpPost("cuisine")]
         // public async Task<IActionResult> CreateCuisine([FromBody] CuisineNode cuisine)
@@ -272,20 +216,6 @@ namespace TastyTrails.Controllers
         {
             await _neo4jService.UserLikesCuisineAsync(userId, cuisineId);
             return Ok(new { Message = "Veza LIKES_CUISINE uspešno kreirana." });
-        }
-        //--------------------------------------------------------------------------------------
-        [HttpPost("cassandra/lookup")]
-        public async Task<IActionResult> PostToLookup([FromBody] RestaurantLookup lookup)
-        {
-            try 
-            {
-                await _cassandra.InsertRestaurantLookup(lookup);
-                return Ok();
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(ex.Message);
-            }
         }
     }
 }

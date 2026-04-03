@@ -15,10 +15,12 @@ namespace TastyTrails.Controllers
     {
         private readonly MongoService _mongo;
         private readonly CassandraService _cassandra;
-        public UsersController(MongoService mg)
+        private readonly INeo4jService _neo4jService;
+        public UsersController(MongoService mg, INeo4jService neo4j)
         {
             _mongo = mg;
             _cassandra = new CassandraService();
+            _neo4jService = neo4j;
         }
 
         private Guid GetUserIdFromToken()
@@ -205,6 +207,43 @@ namespace TastyTrails.Controllers
             await _mongo.Unfollow(currentId, targetId);
 
             return Ok(new { message = "Unfollowed successfully." });
+        }
+
+        [HttpPost("connect/{restaurantId}")]
+        public async Task<IActionResult> Connect(Guid restaurantId)
+        {
+            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            if (string.IsNullOrEmpty(userIdClaim))
+                return Unauthorized();
+
+            var currentId = Guid.Parse(userIdClaim);
+            var type = "LIKE";
+
+            await _neo4jService.ConnectUserToRestaurantAsync(currentId.ToString(), restaurantId.ToString(), type);
+
+            return Ok(new { message = "Connected successfully." });
+        }  
+    
+        [HttpPost("{id}/review/{restaurantId}")]
+        public async Task<IActionResult> PostRestaurantReview(Guid id, Guid restaurantId, [FromBody] MongoReview mongoReview)
+        {
+                var userIdFromToken = GetUserIdFromToken();
+                if (userIdFromToken != id) return Forbid();
+    
+                var review = new CassandraRestaurantReview
+                {
+                    RestaurantId = restaurantId,
+                    UserId = id,
+                    ReviewedAt = DateTime.Now.ToUniversalTime()
+                };
+                await _cassandra.PostRestaurantReview(review);
+
+                await _cassandra.PostRestaurantRating(restaurantId, id, mongoReview.Rating);
+
+                await _mongo.PostReview(restaurantId, id, mongoReview.Rating, mongoReview.Comment);
+    
+                return Ok(new { message = "Review posted successfully." });
         }
     }
 }

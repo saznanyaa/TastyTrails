@@ -77,7 +77,7 @@ namespace TastyTrails.Services
                 }
             }
 
-            return restaurants; 
+            return restaurants.Take(25).ToList(); 
         }
     }
 }
