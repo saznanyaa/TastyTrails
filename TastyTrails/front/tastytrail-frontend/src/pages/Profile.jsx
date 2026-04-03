@@ -111,7 +111,7 @@ export default function Profile() {
 
         // Određujemo endpoint na osnovu trenutnog isFollowing stanja
         const endpoint = isFollowing ? 'unfollow' : 'follow';
-        const url = `http://localhost:5146/api/post/user/${endpoint}?targetId=${id}`;
+        const url = `http://localhost:5146/api/user/${endpoint}/${id}`;
 
         try {
             const res = await fetch(url, {
