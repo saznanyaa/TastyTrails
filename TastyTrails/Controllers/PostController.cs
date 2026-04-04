@@ -135,16 +135,6 @@ namespace TastyTrails.Controllers
 
             return Ok();
         }
-
-        //----------------------------------------------------------------------------
-        [HttpPost("restaurants/{id}/rating")]
-        public async Task<IActionResult> PostRestaurantRating(Guid id, [FromQuery]Guid userId, [FromQuery]int value)
-        {
-            if(value < 1 || value > 5)
-                return BadRequest("Incorrect rating value!");
-            await _cassandra.PostRestaurantRating(id, userId, value);
-            return Ok(new {RestaurantId = id, UserId = userId, RatingValue = value});
-        }
         
 
         //-------------------------------------------------------------------------------

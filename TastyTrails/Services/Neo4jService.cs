@@ -33,8 +33,8 @@ namespace TastyTrails.Services
             try
             {
                 await session.ExecuteWriteAsync(async tx => {
-                    await tx.RunAsync("MERGE (r:Restaurant {id: $id}) SET r.name = $name",
-                        new { id = restaurant.Id, name = restaurant.Name });
+                    await tx.RunAsync("MERGE (r:Restaurant {id: $id}) SET r.name = $name, r.location = $location, r.cuisine = $cuisine",
+                        new { id = restaurant.Id, name = restaurant.Name, location = restaurant.Location, cuisine = restaurant.Cuisine });
                 });
             }
             finally { await session.CloseAsync(); }

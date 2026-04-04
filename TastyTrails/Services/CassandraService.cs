@@ -73,9 +73,10 @@ namespace TastyTrails.Services
 
         public async Task InsertRestaurantView(CassandraRestaurantView view)
         {
+            long trendingScore = 2; 
             await _mapper.InsertAsync(view);
             var data = await GetCityAndCuisine(view.RestaurantId);
-            await IncreaseTrending(data.City, data.Cuisine, view.RestaurantId);
+            await IncreaseTrending(data.City, data.Cuisine, view.RestaurantId, trendingScore);
         }
 
         public async Task<List<CassandraRestaurantView>> GetRestaurantViewsAsync(Guid id)
@@ -118,9 +119,10 @@ namespace TastyTrails.Services
         //-----------------------------------------------------------------------------
         public async Task InsertUserSavedRestaurants(CassandraSavedRestaurants r)
         {
+            long trendingScore = 5; 
             await _mapper.InsertAsync(r);
             var data = await GetCityAndCuisine(r.RestaurantId);
-            await IncreaseTrending(data.City, data.Cuisine, r.RestaurantId);
+            await IncreaseTrending(data.City, data.Cuisine, r.RestaurantId, trendingScore);
         }
 
         public async Task<List<CassandraSavedRestaurants>> GetUserSavedRestaurants(Guid id)
@@ -140,6 +142,7 @@ namespace TastyTrails.Services
         //----------------------------------------------------------------------------
         public async Task PostRestaurantRating(Guid restaurantId, Guid userId, int rating_value)
         {
+            long trendingScore = 10; 
             var query = @"INSERT INTO restaurant_ratings (restaurant_id, user_id, rating_value) VALUES(?,?,?)";
             await _session.ExecuteAsync(new SimpleStatement(query, restaurantId, userId, rating_value));
 
@@ -148,7 +151,7 @@ namespace TastyTrails.Services
                 WHERE restaurant_id = ?";
             await _session.ExecuteAsync(new SimpleStatement(updateQuery, (long)rating_value, restaurantId));
             var data = await GetCityAndCuisine(restaurantId);
-            await IncreaseTrending(data.City, data.Cuisine, restaurantId);
+            await IncreaseTrending(data.City, data.Cuisine, restaurantId, trendingScore);
         }
 
         public async Task EditRestaurantRating(Guid restaurantId, Guid userId, int newValue)
@@ -216,9 +219,10 @@ namespace TastyTrails.Services
         //---restaurant_review_events----------------------------------------------------------------------------
         public async Task PostRestaurantReview(CassandraRestaurantReview r)
         {
+            long trendingScore = 10; 
             await _mapper.InsertAsync(r);
             var data = await GetCityAndCuisine(r.RestaurantId);
-            await IncreaseTrending(data.City, data.Cuisine, r.RestaurantId);
+            await IncreaseTrending(data.City, data.Cuisine, r.RestaurantId, trendingScore);
         }
 
         public async Task<List<CassandraRestaurantReview>> GetRestaurantReview(Guid id)
@@ -261,9 +265,10 @@ namespace TastyTrails.Services
         //---restaurant_checkins----------------------------------------------------------
         public async Task PostRestaurantCheckin(CassandraRestaurantCheckins c)
         {
+            long trendingScore = 7; 
             await _mapper.InsertAsync(c);
             var data = await GetCityAndCuisine(c.RestaurantId);
-            await IncreaseTrending(data.City, data.Cuisine, c.RestaurantId);
+            await IncreaseTrending(data.City, data.Cuisine, c.RestaurantId, trendingScore);
         }
 
         public async Task<List<CassandraRestaurantCheckins>> GetRestaurantCheckins(Guid id)
@@ -338,34 +343,27 @@ namespace TastyTrails.Services
         }
 
         //---trending_weekly-------------------------------------------------------------------
-        public async Task IncreaseTrending(string city, string cuisine, Guid restaurantId)
+        public async Task IncreaseTrending(string city, string cuisine, Guid restaurantId, long trendingScore)
         {
             var now = DateTime.UtcNow;
             var diff = (7+(now.DayOfWeek - DayOfWeek.Monday))%7;
             var weekStart = now.Date.AddDays(-diff);
 
             var query1 = @"UPDATE trending_by_city_weekly
-                SET score = score + 1
+                SET score = score + ?
                 WHERE city = ?
                 AND week_start = ?
                 AND restaurant_id = ?";
 
             var query2 = @"UPDATE trending_by_city_cuisine_weekly
-                SET score = score + 1
+                SET score = score + ?
                 WHERE city = ?
                 AND cuisine = ?
                 AND week_start = ?
                 AND restaurant_id = ?";
             
-            await _session.ExecuteAsync(new SimpleStatement(query1, city, weekStart, restaurantId));
-            await _session.ExecuteAsync(new SimpleStatement(query2, city, cuisine, weekStart, restaurantId));
-        }
-
-        public async Task InsertRestaurantLookup(RestaurantLookup lookup)
-        {
-            var query = @"INSERT INTO restaurant_lookup (id, city, cuisine, name, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?);";
-
-            await _session.ExecuteAsync(new SimpleStatement(query, lookup.Id, lookup.City, lookup.Cuisine, lookup.Name, lookup.Latitude, lookup.Longitude));
+            await _session.ExecuteAsync(new SimpleStatement(query1, trendingScore, city, weekStart, restaurantId));
+            await _session.ExecuteAsync(new SimpleStatement(query2, trendingScore, city, cuisine, weekStart, restaurantId));
         }
 
         //---trending_results----------------------------------------------------------------------
@@ -468,6 +466,13 @@ namespace TastyTrails.Services
                 Latitude = row.GetValue<double>("latitude"),
                 Longitude = row.GetValue<double>("longitude")
             };
+        }
+
+        public async Task InsertRestaurantLookup(RestaurantLookup lookup)
+        {
+            var query = @"INSERT INTO restaurant_lookup (id, city, cuisine, name, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?);";
+
+            await _session.ExecuteAsync(new SimpleStatement(query, lookup.Id, lookup.City, lookup.Cuisine, lookup.Name, lookup.Latitude, lookup.Longitude));
         }
     }
 }

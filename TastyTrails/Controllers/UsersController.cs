@@ -80,6 +80,8 @@ namespace TastyTrails.Controllers
             var userIdFromToken = GetUserIdFromToken();
             if (userIdFromToken != id) return Forbid();
 
+            var rest = await _cassandra.GetCityAndCuisine(restaurantId);
+
             try
             {
                 var result = await _mongo.PostUserSavedRestaurnts(id, restaurantId);
@@ -92,6 +94,7 @@ namespace TastyTrails.Controllers
                 };
 
                 await _cassandra.InsertUserSavedRestaurants(saved);
+                await _cassandra.IncreaseTrending(rest.City, rest.Cuisine, restaurantId, 5);
                 
                 return Ok(result);
             }
@@ -141,6 +144,8 @@ namespace TastyTrails.Controllers
             var userIdFromToken = GetUserIdFromToken();
             if (userIdFromToken != id) return Forbid();
 
+            var rest = await _cassandra.GetCityAndCuisine(restaurantId);
+
             try
             {
                 var result = await _mongo.PostUserVisitedRestaurant(id, restaurantId);
@@ -153,6 +158,7 @@ namespace TastyTrails.Controllers
                 };
 
                 await _cassandra.PostRestaurantCheckin(visited);
+                await _cassandra.IncreaseTrending(rest.City, rest.Cuisine, restaurantId, 7);
 
                 return Ok(result);
             }
@@ -225,6 +231,8 @@ namespace TastyTrails.Controllers
         {
                 var userIdFromToken = GetUserIdFromToken();
                 if (userIdFromToken != id) return Forbid();
+
+                var rest = await _cassandra.GetCityAndCuisine(restaurantId);
     
                 var review = new CassandraRestaurantReview
                 {
@@ -239,7 +247,9 @@ namespace TastyTrails.Controllers
                 await _mongo.PostReview(restaurantId, id, mongoReview.Rating, mongoReview.Comment);
 
                 await _neo4jService.ReviewRestaurant(id.ToString(), restaurantId.ToString(), mongoReview.Rating);
-    
+
+                await _cassandra.IncreaseTrending(rest.City, rest.Cuisine, restaurantId, 10); // Povećavamo trending score za recenziju
+
                 return Ok(new { message = "Review posted successfully." });
         }
     }
