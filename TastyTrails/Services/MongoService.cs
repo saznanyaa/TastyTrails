@@ -12,7 +12,6 @@ namespace TastyTrails.Services
     {
         private readonly IMongoDatabase _database;
 
-        // Javno polje koje koristi tvoj GetUserById i ostale funkcije
         public IMongoCollection<MongoUser> Users { get; private set; }
 
         public MongoService(IOptions<MongoSettings> settings)
@@ -20,7 +19,6 @@ namespace TastyTrails.Services
             var client = new MongoClient(settings.Value.ConnectionString);
             _database = client.GetDatabase(settings.Value.DatabaseName);
 
-            // Inicijalizacija
             var collection = _database.GetCollection<MongoReview>("reviews");
             var indexKeys = Builders<MongoReview>.IndexKeys
                                             .Ascending(r => r.RestaurantId)
@@ -28,7 +26,6 @@ namespace TastyTrails.Services
             var indexOptions = new CreateIndexOptions { Unique = true };
             collection.Indexes.CreateOne(new CreateIndexModel<MongoReview>(indexKeys, indexOptions));
 
-            // Ovde dodeljujemo tvojoj Users kolekciji
             Users = _database.GetCollection<MongoUser>("users");
             var euIndex = Builders<MongoUser>.IndexKeys.Ascending(u => u.Email)
                                             .Ascending(u => u.Username);
@@ -36,11 +33,10 @@ namespace TastyTrails.Services
             Users.Indexes.CreateOne(new CreateIndexModel<MongoUser>(euIndex, iOptions));
         }
 
-        // --- Kolekcije kao helperi (bez dupliranja imena) ---
+    
         private IMongoCollection<MongoRestaurant> Restaurants => _database.GetCollection<MongoRestaurant>("restaurants");
         private IMongoCollection<MongoReview> Reviews => _database.GetCollection<MongoReview>("reviews");
 
-        // --- TVOJE FUNKCIJE (NEPROMENJENI NAZIVI) ---
 
         public async Task InsertRestaurants(List<SeedRestaurant> seeds)
         {
@@ -109,15 +105,29 @@ namespace TastyTrails.Services
                 Builders<MongoReview>.Filter.Eq(r => r.UserId, userId)
             );
             var exists = await Reviews.Find(filter).FirstOrDefaultAsync();
+            
+            var restaurant = await GetRestaurantById(restaurantId);
+            if (restaurant == null) throw new Exception("Restaurant not found");
+
             if (exists != null)
             {
+                int oldRating = exists.Rating;
+
                 var update = Builders<MongoReview>.Update.Set(r => r.Rating, rating)
                                                          .Set(r => r.Comment, comment)
                                                          .Set(r => r.UpdatedAt, DateTime.UtcNow);
                 await Reviews.UpdateOneAsync(filter, update);
+
+                restaurant.AverageRating = ((restaurant.AverageRating * restaurant.TotalReviews) - oldRating + rating) / restaurant.TotalReviews;
+
+                if(restaurant.AverageRating > 2.5) restaurant.TrendingScore += 10;
+
+                await UpdateRestaurant(restaurant);
+
                 exists.Rating = rating;
                 exists.Comment = comment;
                 exists.UpdatedAt = DateTime.UtcNow;
+                
                 return exists;
             }
             else
@@ -133,8 +143,27 @@ namespace TastyTrails.Services
                     UpdatedAt = DateTime.UtcNow
                 };
                 await Reviews.InsertOneAsync(review);
+                
+                restaurant.TotalReviews += 1;
+                restaurant.AverageRating = ((restaurant.AverageRating * (restaurant.TotalReviews - 1)) + rating) / restaurant.TotalReviews;
+
+                if(restaurant.AverageRating > 2.5) restaurant.TrendingScore += 10;
+
+                await UpdateRestaurant(restaurant);
+
                 return review;
             }
+        }
+
+        public async Task UpdateRestaurant(MongoRestaurant restaurant)
+        {
+            var filter = Builders<MongoRestaurant>.Filter.Eq(r => r.Id, restaurant.Id);
+            
+            var update = Builders<MongoRestaurant>.Update.Set(r => r.AverageRating, restaurant.AverageRating)
+                                                         .Set(r => r.TotalReviews, restaurant.TotalReviews)
+                                                         .Set(r => r.TrendingScore, restaurant.TrendingScore);
+
+            await Restaurants.UpdateOneAsync(filter, update);
         }
 
         public async Task<bool> DeleteReview(Guid reviewId, Guid userId)

@@ -237,6 +237,8 @@ namespace TastyTrails.Controllers
                 await _cassandra.PostRestaurantRating(restaurantId, id, mongoReview.Rating);
 
                 await _mongo.PostReview(restaurantId, id, mongoReview.Rating, mongoReview.Comment);
+
+                await _neo4jService.ReviewRestaurant(id.ToString(), restaurantId.ToString(), mongoReview.Rating);
     
                 return Ok(new { message = "Review posted successfully." });
         }

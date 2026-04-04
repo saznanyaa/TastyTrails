@@ -24,6 +24,7 @@ namespace TastyTrails.Services
         Task LinkExternalReviewAsync(string userId, string restaurantId, ReviewRelationNode externalData);
         Task ExecuteWriteAsync(string query, object parameters = null);
 
+        Task ReviewRestaurant(string userId, string restaurantId, int rating);
         Task FollowUserAsync(string followerId, string followedId);
         Task UserLikesCuisineAsync(string userId, string cuisineId);
         Task<List<NeoRestaurantNode>> GetSmartRecommendationsAsync(string userId);

@@ -54,6 +54,27 @@ namespace TastyTrails.Services
             finally { await session.CloseAsync(); }
         }
 
+        public async Task ReviewRestaurant(string userId, string restaurantId, int rating)
+        {
+            var session = _driver.AsyncSession();
+            try
+            {
+                await session.ExecuteWriteAsync(async tx => {
+                    await tx.RunAsync(
+                        @"MATCH (u:User {id: $userId}), (res:Restaurant {id: $restaurantId})
+                        MERGE (u)-[:RATED]->(rev:Review {
+                        rating: $rating
+                        })-[:REVIEWED]->(res)",
+                        new
+                        {
+                            userId,
+                            restaurantId,
+                            rating
+                        });
+                });
+            }
+            finally { await session.CloseAsync(); }
+        }
         public async Task FollowUserAsync(string followerId, string followedId)
         {
             var session = _driver.AsyncSession();
