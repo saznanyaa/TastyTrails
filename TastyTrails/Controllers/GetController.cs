@@ -21,6 +21,35 @@ namespace TastyTrails.Controllers
             _neo4jService = neo4j;
         }
 
+        //trending resturants
+        [HttpGet("restaurants/trending/{city}")]
+        public async Task<IActionResult> GetTrendingRestaurants(string city)
+        {
+            var raw = await _cassandra.GetTrendingByCity(city);
+
+            if(!raw.Any())
+                return NotFound("Nema trending restorana za dati grad.");
+
+            var top = raw.OrderByDescending(r => r.score).Take(10).ToList();
+
+            var ids = top.Select(r => r.id).ToList();
+
+            foreach(var id in ids)
+            {
+                await _mongo.GetRestaurantById(id);
+            }
+
+            var res = top.Join(ids, t => t.id, id => id, (t, id) => new {
+                RestaurantId = t.id,
+                Name = _mongo.GetRestaurantById(t.id).Result?.Name ?? "Nepoznato",
+                City = city,
+                Score = t.score
+            }).OrderByDescending(r => r.Score)
+            .ToList();
+
+            return Ok(res);
+        }
+
         //---restaurant_views------------------------------------------------------------
         [HttpGet("restaurants/{id}/views")]
         public async Task<IActionResult> GetRestaurantViews(Guid id)

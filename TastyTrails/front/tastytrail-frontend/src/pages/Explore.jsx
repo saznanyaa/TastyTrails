@@ -19,7 +19,6 @@ export default function Explore() {
     const [restaurants, setRestaurants] = useState([]);
     const [loading, setLoading] = useState(true);
 
-    // Koordinate centra Niša (kao u tvom hardkodu)
     const NIS_LAT = 43.3217;
     const NIS_LNG = 21.8958;
 

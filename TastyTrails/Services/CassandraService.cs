@@ -2,6 +2,7 @@ using Cassandra;
 using Cassandra.Mapping;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc.Rendering;
+using MongoDB.Driver.Search;
 using TastyTrails.Models;
 
 namespace TastyTrails.Services
@@ -346,101 +347,48 @@ namespace TastyTrails.Services
         public async Task IncreaseTrending(string city, string cuisine, Guid restaurantId, long trendingScore)
         {
             var now = DateTime.UtcNow;
-            var diff = (7+(now.DayOfWeek - DayOfWeek.Monday))%7;
-            var weekStart = now.Date.AddDays(-diff);
+            // var diff = (7+(now.DayOfWeek - DayOfWeek.Monday))%7;
+            // var weekStart = now.Date.AddDays(-diff);
 
-            var query1 = @"UPDATE trending_by_city_weekly
+            var monthStart = new DateTime(now.Year, now.Month, 1);
+
+            var query1 = @"UPDATE trending_by_city_monthly
                 SET score = score + ?
                 WHERE city = ?
-                AND week_start = ?
+                AND month_start = ?
                 AND restaurant_id = ?";
 
-            var query2 = @"UPDATE trending_by_city_cuisine_weekly
+            var query2 = @"UPDATE trending_by_city_cuisine_monthly
                 SET score = score + ?
                 WHERE city = ?
                 AND cuisine = ?
-                AND week_start = ?
+                AND month_start = ?
                 AND restaurant_id = ?";
             
-            await _session.ExecuteAsync(new SimpleStatement(query1, trendingScore, city, weekStart, restaurantId));
-            await _session.ExecuteAsync(new SimpleStatement(query2, trendingScore, city, cuisine, weekStart, restaurantId));
+            await _session.ExecuteAsync(new SimpleStatement(query1, trendingScore, city, monthStart, restaurantId));
+            await _session.ExecuteAsync(new SimpleStatement(query2, trendingScore, city, cuisine, monthStart, restaurantId));
         }
 
         //---trending_results----------------------------------------------------------------------
-        public async Task FillWeeklyTrendingResults(string city, string cuisine, DateTime weekStart)
+        
+        public async Task<List<(Guid id, long score)>> GetTrendingByCity(string city)
         {
-            var q1 = @"SELECT id FROM restaurants_by_city_and_cuisine WHERE city = ? and cuisine = ?";
-            var rIdsRes = await _session.ExecuteAsync(new SimpleStatement(q1, city, cuisine));
+            var rn = DateTime.UtcNow;
+            var monthStart = new DateTime(rn.Year, rn.Month, 1);
 
-            var rIds = rIdsRes.Select(r => r.GetValue<Guid>("id")).ToList();
+            var query = @"
+                SELECT restaurant_id, score
+                FROM trending_by_city_monthly
+                WHERE city = ?
+                AND month_start = ?";
 
-            if(!rIds.Any()) return;
+            var result = await _session.ExecuteAsync(new SimpleStatement(query, city, monthStart));
 
-            var restaurantMetadata = new Dictionary<Guid, RestaurantMeta>();
-            var scoreList = new List<(RestaurantMeta Meta, int Score)>();
-
-            var weekStartUtc = weekStart.ToUniversalTime();
-
-            foreach(var r in rIds)
-            {
-                var q3 = @"SELECT id, name, cuisine, latitude, longitude 
-                    FROM restaurant_lookup WHERE id = ?";
-                var row = (await _session.ExecuteAsync(new SimpleStatement(q3, r))).FirstOrDefault();
-                if(row != null)
-                {
-                    var meta = new RestaurantMeta
-                    {
-                        Id = row.GetValue<Guid>("id"),
-                        Name = row.GetValue<string>("name"),
-                        Cuisine = row.GetValue<string>("cuisine"),
-                        Latitude = row.GetValue<double>("latitude"),
-                        Longitude = row.GetValue<double>("longitude")
-                    };
-                    restaurantMetadata[r] = meta;
-
-                    var q2 = @"SELECT score FROM trending_by_city_weekly WHERE
-                        city = ? AND week_start = ? AND restaurant_id = ?";
-
-                    var row1 = await _session.ExecuteAsync(new SimpleStatement(q2, city, weekStartUtc, r));
-
-                    var score = row1.FirstOrDefault();
-                    if(score != null)
-                    {
-                        long scoreLong = score.GetValue<long>("score");
-                        int scoreInt = checked((int)scoreLong);
-                        scoreList.Add((meta, scoreInt));
-                    }
-                }
-            }
-            if(!scoreList.Any()) return;
-            
-            var sortedScores = scoreList.OrderByDescending(x => x.Score).ToList();
-
-            int rank = 1;
-            foreach(var s in sortedScores)
-            {
-
-                var q4 = @"INSERT INTO trending_results_by_city_weekly
-                    (city, week_start, rank, restaurant_id, name, cuisine, latitude, longitude, score)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                var q5 = @"INSERT INTO trending_results_by_city_cuisine_weekly
-                    (city, week_start, rank, restaurant_id, name, cuisine, latitude, longitude, score)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-                await _session.ExecuteAsync(new SimpleStatement(q4, city, weekStartUtc, rank, s.Meta.Id, s.Meta.Name, s.Meta.Cuisine, s.Meta.Latitude, s.Meta.Longitude, s.Score));
-                await _session.ExecuteAsync(new SimpleStatement(q5, city, weekStartUtc, rank, s.Meta.Id, s.Meta.Name, s.Meta.Cuisine, s.Meta.Latitude, s.Meta.Longitude, s.Score));
-                rank++;
-            }
+            return result.Select(r => (
+                id: r.GetValue<Guid>("restaurant_id"),
+                score: r.GetValue<long>("score")
+            )).ToList();
         }
-
-        public async Task DeleteTrendingWeeklyResults(string city, string cuisine, DateTime weekStart)
-        {
-            var q1 = @"DELETE FROM trending_results_by_city_weekly WHERE city = ? AND week_start = ?";
-            var q2 = @"DELETE FROM trending_results_by_city_cuisine_weekly WHERE city = ? AND cuisine = ? AND week_start = ?";
-
-            await _session.ExecuteAsync(new SimpleStatement(q1, city, weekStart));
-            await _session.ExecuteAsync(new SimpleStatement(q2, city, cuisine, weekStart));
-        }
-
         //---helpers-------------------------------------------------------------------------------
 
         public async Task<RestaurantLookup> GetCityAndCuisine(Guid id)
