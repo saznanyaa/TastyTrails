@@ -42,12 +42,29 @@ namespace TastyTrails.Services
 
         public async Task ConnectUserToRestaurantAsync(string userId, string restaurantId, string relationType)
         {
+            if (relationType != "LIKES" && relationType != "DISLIKES")
+                throw new ArgumentException("Invalid relation type");
+
             var session = _driver.AsyncSession();
+
             try
             {
-                await session.ExecuteWriteAsync(async tx => {
-                    var query = $"MATCH (u:User {{id: $userId}}), (r:Restaurant {{id: $restaurantId}}) " +
-                                $"MERGE (u)-[:{relationType.ToUpper()}]->(r)";
+                await session.ExecuteWriteAsync(async tx =>
+                {
+                    var query = @"
+                        MATCH (u:User {id: $userId}), (r:Restaurant {id: $restaurantId})
+
+                        OPTIONAL MATCH (u)-[l:LIKES]->(r)
+                        DELETE l
+
+                        OPTIONAL MATCH (u)-[d:DISLIKES]->(r)
+                        DELETE d
+                    ";
+
+                    query += relationType == "LIKES"
+                        ? "MERGE (u)-[:LIKES]->(r)"
+                        : "MERGE (u)-[:DISLIKES]->(r)";
+
                     await tx.RunAsync(query, new { userId, restaurantId });
                 });
             }
@@ -59,21 +76,34 @@ namespace TastyTrails.Services
             var session = _driver.AsyncSession();
             try
             {
-                await session.ExecuteWriteAsync(async tx => {
-                    await tx.RunAsync(
-                        @"MATCH (u:User {id: $userId}), (res:Restaurant {id: $restaurantId})
-                        MERGE (u)-[:RATED]->(rev:Review {
-                        rating: $rating
-                        })-[:REVIEWED]->(res)",
-                        new
-                        {
-                            userId,
-                            restaurantId,
-                            rating
-                        });
+                await session.ExecuteWriteAsync(async tx =>
+                {
+                    await tx.RunAsync(@"
+                        MATCH (u:User {id: $userId}), (res:Restaurant {id: $restaurantId})
+
+                        MERGE (u)-[r:RATED]->(res)
+                        SET r.score = $rating
+                    ", new
+                    {
+                        userId,
+                        restaurantId,
+                        rating
+                    });
                 });
+
+                if (rating >= 3)
+                {
+                    await ConnectUserToRestaurantAsync(userId, restaurantId, "LIKES");
+                }
+                else
+                {
+                    await ConnectUserToRestaurantAsync(userId, restaurantId, "DISLIKES");
+                }
             }
-            finally { await session.CloseAsync(); }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
         public async Task FollowUserAsync(string followerId, string followedId)
         {
@@ -102,6 +132,80 @@ namespace TastyTrails.Services
                 });
             }
             finally { await session.CloseAsync(); }
+        }
+
+        public async Task<List<NeoRestaurantNode>> GetRecommendations(string userId)
+        {
+            var session = _driver.AsyncSession();
+
+            try
+            {
+                return await session.ExecuteReadAsync(async tx =>
+                {
+                    var cursor = await tx.RunAsync(@"
+                        MATCH (u:User {id: $userId})
+
+                        OPTIONAL MATCH (u)-[:FOLLOWS]->(f:User)-[rfRel:RATED]->(rf:Restaurant)
+                        WHERE rfRel.score >= 3
+                        AND NOT (u)-[:RATED|LIKES|DISLIKES]->(rf)
+
+                        OPTIONAL MATCH (u)-[r1Rel:RATED]->(r1:Restaurant)
+                        WHERE r1Rel.score >= 3
+
+                        OPTIONAL MATCH (r1)<-[r2Rel:RATED]-(other:User)
+                        WHERE other <> u AND r2Rel.score >= 3
+
+                        OPTIONAL MATCH (other)-[rsRel:RATED]->(rs:Restaurant)
+                        WHERE rsRel.score >= 3
+                        AND NOT (u)-[:RATED|LIKES|DISLIKES]->(rs)
+
+                        WITH 
+                            rf, rs,
+                            SUM(rfRel.score) AS followerScore,
+                            SUM(rsRel.score) AS similarScore
+                            WITH 
+                            CASE 
+                                WHEN rf IS NOT NULL THEN rf 
+                                ELSE rs 
+                            END AS restaurant,
+                            followerScore,
+                            similarScore
+
+                        WHERE restaurant IS NOT NULL
+
+                        RETURN 
+                            restaurant.id AS id,
+                            restaurant.name AS name,
+                            restaurant.location AS location,
+                            restaurant.cuisine AS cuisine,
+
+                            (coalesce(followerScore,0) * 3 + coalesce(similarScore,0) * 2) AS score
+
+                        ORDER BY score DESC
+                        LIMIT 10
+                    ", new { userId });
+
+                    var results = new List<NeoRestaurantNode>();
+
+                    await cursor.ForEachAsync(record =>
+                    {
+                        results.Add(new NeoRestaurantNode
+                        {
+                            Id = record["id"].As<string>(),
+                            Name = record["name"].As<string>(),
+                            Location = record["location"].As<string>(),
+                            Cuisine = record["cuisine"].As<string>(),
+                            Score = record["score"].As<int>()
+                        });
+                    });
+
+                    return results;
+                });
+            }
+            finally
+            {
+                await session.CloseAsync();
+            }
         }
 
         public async Task<NeoUserNode?> GetUserByIdAsync(string id)

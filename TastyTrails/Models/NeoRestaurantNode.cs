@@ -6,5 +6,6 @@
         public string Name { get; set; } = null!;
         public string Location { get; set; } = null!;
         public string Cuisine { get; set; } = null!;
+        public int Score { get; set; }
     }
 }

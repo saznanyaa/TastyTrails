@@ -229,28 +229,81 @@ namespace TastyTrails.Controllers
         [HttpPost("{id}/review/{restaurantId}")]
         public async Task<IActionResult> PostRestaurantReview(Guid id, Guid restaurantId, [FromBody] MongoReview mongoReview)
         {
-                var userIdFromToken = GetUserIdFromToken();
-                if (userIdFromToken != id) return Forbid();
+            var userIdFromToken = GetUserIdFromToken();
+            if (userIdFromToken != id) return Forbid();
 
-                var rest = await _cassandra.GetCityAndCuisine(restaurantId);
+            var rest = await _cassandra.GetCityAndCuisine(restaurantId);
     
-                var review = new CassandraRestaurantReview
+            var review = new CassandraRestaurantReview
+            {
+                RestaurantId = restaurantId,
+                UserId = id,
+                ReviewedAt = DateTime.Now.ToUniversalTime()
+            };
+            await _cassandra.PostRestaurantReview(review);
+
+            await _cassandra.PostRestaurantRating(restaurantId, id, mongoReview.Rating);
+
+            await _mongo.PostReview(restaurantId, id, mongoReview.Rating, mongoReview.Comment);
+
+            await _neo4jService.ReviewRestaurant(id.ToString(), restaurantId.ToString(), mongoReview.Rating);
+
+            await _cassandra.IncreaseTrending(rest.City, rest.Cuisine, restaurantId, 10); // Povećavamo trending score za recenziju
+
+            return Ok(new { message = "Review posted successfully." });
+        }
+
+        [HttpGet("{id}/recommendations/{city}")]
+        public async Task<IActionResult> GetRecommendations(Guid id, string city)
+        {
+            var userIdFromToken = GetUserIdFromToken();
+            if (userIdFromToken != id) return Forbid();
+
+            try
+            {
+                var recommendations = await _neo4jService.GetRecommendations(id.ToString());
+                var trending = await _cassandra.GetTrendingByCity(city);
+                var trendingScores = trending.ToDictionary(
+                    x => x.id,
+                    x => (int)x.score
+                );
+
+                foreach(var r in recommendations)
                 {
-                    RestaurantId = restaurantId,
-                    UserId = id,
-                    ReviewedAt = DateTime.Now.ToUniversalTime()
-                };
-                await _cassandra.PostRestaurantReview(review);
+                    var restId = Guid.Parse(r.Id);
 
-                await _cassandra.PostRestaurantRating(restaurantId, id, mongoReview.Rating);
+                    if(trendingScores.TryGetValue(restId, out var score))
+                    {
+                        r.Score = (int)(r.Score*0.7 + score*0.3);
+                    }
 
-                await _mongo.PostReview(restaurantId, id, mongoReview.Rating, mongoReview.Comment);
+                }
 
-                await _neo4jService.ReviewRestaurant(id.ToString(), restaurantId.ToString(), mongoReview.Rating);
+                var final = recommendations.OrderByDescending(r => r.Score).Take(10).ToList();
 
-                await _cassandra.IncreaseTrending(rest.City, rest.Cuisine, restaurantId, 10); // Povećavamo trending score za recenziju
+                return Ok(final);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
 
-                return Ok(new { message = "Review posted successfully." });
+        [HttpGet("{id}/similar")]
+        public async Task<IActionResult> GetSimilarUsers(Guid id)
+        {
+            var userIdFromToken = GetUserIdFromToken();
+            if (userIdFromToken != id) return Forbid();
+
+            try
+            {
+                var similarUsers = await _neo4jService.GetRecommendations(id.ToString());
+                return Ok(similarUsers);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
         }
     }
 }

@@ -10,6 +10,7 @@ namespace TastyTrails.Services
         Task CreateRestaurantNodeAsync(NeoRestaurantNode restaurant);
         Task ConnectUserToRestaurantAsync(string userId, string restaurantId, string relationType);
 
+        Task<List<NeoRestaurantNode>> GetRecommendations(string userId);
         Task<NeoUserNode?> GetUserByIdAsync(string id);
         Task<List<NeoRestaurantNode>> GetUserLikesAsync(string userId);
 
