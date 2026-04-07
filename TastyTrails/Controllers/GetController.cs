@@ -1,5 +1,6 @@
 ﻿using System.Runtime.CompilerServices;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.VisualBasic;
 using TastyTrails.Configurations;
 using TastyTrails.Models;
 using TastyTrails.Services;
@@ -32,20 +33,32 @@ namespace TastyTrails.Controllers
 
             var top = raw.OrderByDescending(r => r.score).Take(10).ToList();
 
-            var ids = top.Select(r => r.id).ToList();
+            var mongoRestaurants = new List<MongoRestaurant>();
 
-            foreach(var id in ids)
+            foreach(var t in top)
             {
-                await _mongo.GetRestaurantById(id);
+                var restaurant = await _mongo.GetRestaurantById(t.id);
+                if(restaurant != null)
+                    mongoRestaurants.Add(restaurant);
             }
 
-            var res = top.Join(ids, t => t.id, id => id, (t, id) => new {
-                RestaurantId = t.id,
-                Name = _mongo.GetRestaurantById(t.id).Result?.Name ?? "Nepoznato",
-                City = city,
-                Score = t.score
-            }).OrderByDescending(r => r.Score)
-            .ToList();
+            var res = top.Select(t =>
+            {
+                var mongo = mongoRestaurants.FirstOrDefault(m => m.Id == t.id);
+
+                return new 
+                {
+                    Id = t.id,
+                    Name = mongo != null ? mongo.Name : "Nepoznato",
+                    City = city,
+                    AverageRating = mongo != null ? mongo.AverageRating : 0,
+                    TotalReviews = mongo != null ? mongo.TotalReviews : 0,
+                    Score = t.score,
+                    Latitude = mongo?.Coordinates?.Lat,
+                    Longitude = mongo?.Coordinates?.Lng
+                };
+            }
+            ).OrderByDescending(r => r.Score).ToList();
 
             return Ok(res);
         }
@@ -113,6 +126,13 @@ namespace TastyTrails.Controllers
             var r = await _mongo.GetRestaurantReviews(id);
     
             return Ok($"cassandra: {reviews}, mongo: {r}");
+        }
+
+        [HttpGet("restaurants/{id}/mngReviews")]
+        public async Task<IActionResult> GetRestaurantMongoReviews(Guid id)
+        {
+            var reviews = await _mongo.GetRestaurantReviews(id);
+            return Ok(reviews);
         }
 
         [HttpGet("restaurants/{id}/reviewsfromto")]

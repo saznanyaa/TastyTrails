@@ -289,21 +289,6 @@ namespace TastyTrails.Controllers
             }
         }
 
-        [HttpGet("{id}/similar")]
-        public async Task<IActionResult> GetSimilarUsers(Guid id)
-        {
-            var userIdFromToken = GetUserIdFromToken();
-            if (userIdFromToken != id) return Forbid();
-
-            try
-            {
-                var similarUsers = await _neo4jService.GetRecommendations(id.ToString());
-                return Ok(similarUsers);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, new { error = ex.Message });
-            }
-        }
+        
     }
 }
