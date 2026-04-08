@@ -281,7 +281,29 @@ namespace TastyTrails.Controllers
 
                 var final = recommendations.OrderByDescending(r => r.Score).Take(10).ToList();
 
-                return Ok(final);
+                var finalWithLocation = final.Select(async r => {
+                    var mongoRest = await _mongo.GetRestaurantById(Guid.Parse(r.Id));
+                    if (mongoRest != null)
+                    {
+                        return new
+                        {
+                            r.Id,
+                            r.Name,
+                            r.Score,
+                            r.Cuisine,
+                            Latitude = mongoRest.Coordinates?.Lat,
+                            Longitude = mongoRest.Coordinates?.Lng,
+                            mongoRest.AverageRating,
+                            mongoRest.TotalReviews
+                        };
+                    }
+                    return null; 
+                });
+
+                var fin = ( await Task.WhenAll(finalWithLocation))
+                                .Where(x => x != null).ToList();
+
+                return Ok(fin);    
             }
             catch (Exception ex)
             {

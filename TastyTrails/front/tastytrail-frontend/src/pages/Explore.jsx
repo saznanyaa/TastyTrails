@@ -21,8 +21,8 @@ export default function Explore() {
         iconSize: [30, 30],
     });
     const recommendedIcon = new L.Icon({
-        iconUrl: "/icons/heart.png",
-        iconSize: [30, 30],
+        iconUrl: "/icons/recommendation.png",
+        iconSize: [35, 35],
     });
 
     const handleMarkerClick = async (restaurant) => {
@@ -47,33 +47,38 @@ export default function Explore() {
     };
 
     useEffect(() => {
-        axios.get("http://localhost:5146/api/get/mongoRestaurants")
-        .then(res =>{console.log("All fetched restaurants:", res.data);
-             setAllRestaurants(res.data)});
-        axios.get(`http://localhost:5146/api/get/restaurants/trending/Beograd`)
-        .then((res) => {
-            console.log("Fetched restaurants:", res.data);
-            setTrending(res.data);
-        })
-        
-        .catch((error) => console.error("Error fetching restaurants:", error));
-    }, []);
+    const userId = localStorage.getItem("userId");
+    const token = localStorage.getItem("authToken");
 
-    const restaurantMap = new Map();
-    //najmanji priortet
-    allRestaurants.forEach(r => {
-        restaurantMap.set(r.id, {...r, type:"default"});
-    });
-    //srednji priortet
-    trending.forEach(r => {
-        restaurantMap.set(r.id, {...r, type:"trending"});
-    });
-    //najveci priortet
-    recommended.forEach(r => {
-        restaurantMap.set(r.id, {...r, type:"recommended"});
-    });
-    
-    const finalRestaurants = Array.from(restaurantMap.values());
+    if (!userId || !token) return;
+
+    Promise.all([
+        axios.get("http://localhost:5146/api/get/mongoRestaurants"),
+        axios.get("http://localhost:5146/api/get/restaurants/trending/Beograd"),
+        axios.get(`http://localhost:5146/api/user/${userId}/recommendations/Beograd`, {
+        headers: { Authorization: `Bearer ${token}` },
+        }),
+    ])
+        .then(([allRes, trendingRes, recommendedRes]) => {
+        console.log("All restaurants:", allRes.data);
+        console.log("Trending:", trendingRes.data);
+        console.log("Recommended:", recommendedRes.data);        
+
+        const restaurantMap = new Map();
+
+        allRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "default" }));
+        trendingRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "trending" }));
+        recommendedRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "recommended" }));
+
+        setAllRestaurants(allRes.data);
+        setTrending(trendingRes.data);
+        setRecommended(recommendedRes.data);
+        setRestaurants(Array.from(restaurantMap.values()));
+        })
+        .catch(err => {
+        console.error("Error fetching restaurants:", err.response || err.message);
+        });
+    }, []);
 
     console.log("ALL:", allRestaurants.length);
     console.log("TRENDING:", trending.length);
@@ -90,7 +95,7 @@ export default function Explore() {
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
 
-        {finalRestaurants.map((r) => (
+        {restaurants.map((r) => (
         <Marker
             key={r.id}
             position={[r.latitude, r.longitude]}
@@ -103,7 +108,7 @@ export default function Explore() {
             <div style={{ minWidth: "200px", maxHeight: "200px", overflowY: "auto" }}>
                 <h4 style={{ margin: 0 }}>{r.name}</h4>
                 <p style={{ margin: "5px 0" }}>
-                ⭐ {r.averageRating.toFixed(1)} ({r.reviewCount})
+                ⭐ {(r.averageRating ?? 0).toFixed(1)} ({r.reviewCount ?? 0})
                 </p>
 
                 <hr />
