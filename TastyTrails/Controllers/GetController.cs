@@ -199,8 +199,19 @@ namespace TastyTrails.Controllers
         [HttpGet("mongoRestaurants")]
         public async Task<IActionResult> GetMongoRestaurants()
         {
-            var r = await _mongo.GetRestaurants();
-            return Ok(r.Count);
+            var restaurants = await _mongo.GetRestaurants();
+
+            var res = restaurants.Select(r => new
+            {
+                Id = r.Id,
+                Name = r.Name,
+                AverageRating = r.AverageRating,
+                TotalReviews = r.TotalReviews,
+                Latitude = r.Coordinates?.Lat,
+                Longitude = r.Coordinates?.Lng
+            }).ToList();
+
+            return Ok(res);
         }
 
         [HttpGet("mongoRest/{id}")]

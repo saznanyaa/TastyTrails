@@ -122,12 +122,11 @@ namespace TastyTrails.Controllers
 
 //---cassandra_analytics-----------------------------------------------------------------------------
         [HttpPost("{id}/view")]
-        public async Task<IActionResult> PostRestaurantView(Guid id, [FromBody]Guid userId)
+        public async Task<IActionResult> PostRestaurantView(Guid id)
         {
             var view = new CassandraRestaurantView
             {
                 RestaurantId = id,
-                UserId = userId,
                 ViewedAt = DateTime.Now.ToUniversalTime()
             };
 
