@@ -208,6 +208,31 @@ namespace TastyTrails.Services
             }
         }
 
+        public async Task DeleteReview(string userId, string restaurantId)
+        {
+            var session = _driver.AsyncSession();
+
+            try
+            {
+                await session.ExecuteWriteAsync(async tx =>
+                {
+                    await tx.RunAsync(@"
+                        MATCH (u:User {id: $userId})-[r]->(res:Restaurant {id: $restaurantId})
+                        WHERE type(r) IN ['RATED', 'LIKES', 'DISLIKES']
+                        DELETE r
+                    ", new
+                    {
+                        userId,
+                        restaurantId
+                    });
+                });
+            }
+            finally
+            {
+                await session.CloseAsync();
+            }
+        }
+
         public async Task<NeoUserNode?> GetUserByIdAsync(string id)
         {
             var session = _driver.AsyncSession();

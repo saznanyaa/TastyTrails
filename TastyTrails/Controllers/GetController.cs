@@ -22,6 +22,14 @@ namespace TastyTrails.Controllers
             _neo4jService = neo4j;
         }
 
+        [HttpGet("restIdfromReview/{reviewId}")]
+        public async Task<IActionResult> GetRestaurantIdFromReview(Guid reviewId)
+        {
+            var restaurant = await _mongo.GetRestaurantByReviewId(reviewId);
+            if (restaurant == null) return NotFound("Recenzija nije pronađena.");
+            return Ok(restaurant.Id);
+        }
+
         //trending resturants
         [HttpGet("restaurants/trending/{city}")]
         public async Task<IActionResult> GetTrendingRestaurants(string city)

@@ -74,6 +74,8 @@ namespace TastyTrails.Controllers
             return NoContent();
         }
 
+//---saved restaurants--------------------------------------------------------------------------------
+
         [HttpPost("{id}/saved/{restaurantId}")]
         public async Task<IActionResult> PostSavedRestaurant(Guid id, Guid restaurantId)
         {
@@ -112,6 +114,7 @@ namespace TastyTrails.Controllers
 
             try
             {
+                await _cassandra.DeleteUserSavedRestaurant(id, restaurantId);
                 var result = await _mongo.DeleteUserSavedRestaurant(id, restaurantId);
                 return Ok(result);
             }
@@ -138,6 +141,7 @@ namespace TastyTrails.Controllers
             }
         }
 
+//---visited restaurants--------------------------------------------------------------------------------
         [HttpPost("{id}/visited/{restaurantId}")]
         public async Task<IActionResult> PostVisitedRestaurant(Guid id, Guid restaurantId)
         {
@@ -184,7 +188,7 @@ namespace TastyTrails.Controllers
                 return NotFound();
             }
         }
-
+//---follow/unfollow--------------------------------------------------------------------------------
         [HttpPost("follow/{targetId}")]
         public async Task<IActionResult> Follow([FromRoute] Guid targetId)
         {
@@ -225,7 +229,7 @@ namespace TastyTrails.Controllers
 
             return Ok(new { message = "Connected successfully." });
         }  
-    
+//---reviews--------------------------------------------------------------------------------
         [HttpPost("{id}/review/{restaurantId}")]
         public async Task<IActionResult> PostRestaurantReview(Guid id, Guid restaurantId, [FromBody] MongoReview mongoReview)
         {
@@ -248,11 +252,23 @@ namespace TastyTrails.Controllers
 
             await _neo4jService.ReviewRestaurant(id.ToString(), restaurantId.ToString(), mongoReview.Rating);
 
-            await _cassandra.IncreaseTrending(rest.City, rest.Cuisine, restaurantId, 10); // Povećavamo trending score za recenziju
+            await _cassandra.IncreaseTrending(rest.City, rest.Cuisine, restaurantId, 10);
 
-            return Ok(new { message = "Review posted successfully." });
+            return Ok(new { message = "Review posted successfully."});
+        }
+//you do not delete reviews from cassandra, because you can't undo an action there, because it stores history, not reviews themselves
+        [HttpDelete("{userId}/review/{rId}")]
+        public async Task<IActionResult> DeleteReview(Guid userId, Guid rId)
+        {
+            var restaurant = await _mongo.GetRestaurantByReviewId(rId);
+            var restId = restaurant.Id;
+            await _neo4jService.DeleteReview(userId.ToString(), restId.ToString());
+            var deleted = await _mongo.DeleteReview(rId, userId);
+            if(!deleted) return NotFound("Review not found!");
+            return Ok(deleted);
         }
 
+//---recommendations--------------------------------------------------------------------------------
         [HttpGet("{id}/recommendations/{city}")]
         public async Task<IActionResult> GetRecommendations(Guid id, string city)
         {

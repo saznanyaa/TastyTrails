@@ -20,13 +20,6 @@ namespace TastyTrails.Controllers
             _neo4jService = neo4j;
         }
 
-        [HttpDelete("users/{userId}/saved/{restaurantId}")]
-        public async Task<IActionResult> DeleteUserSavedRestaurant(Guid userId, Guid restaurantId)
-        {
-            await _cassandra.DeleteUserSavedRestaurant(userId, restaurantId);
-            return Ok(new { Message = $"Restaurant {restaurantId} removed from user {userId}'s saved list." });
-        }
-
         [HttpDelete("review/{rId}")]
         public async Task<IActionResult> DeleteReview(Guid rId, [FromQuery]Guid userId)
         {

@@ -166,10 +166,62 @@ namespace TastyTrails.Services
             await Restaurants.UpdateOneAsync(filter, update);
         }
 
+        public async Task UpdateTrendingScore(Guid restaurantId, double newScore)
+        {
+            var filter = Builders<MongoRestaurant>.Filter.Eq(r => r.Id, restaurantId);
+            var update = Builders<MongoRestaurant>.Update.Set(r => r.TrendingScore, newScore);
+            await Restaurants.UpdateOneAsync(filter, update);
+        }
+
         public async Task<bool> DeleteReview(Guid reviewId, Guid userId)
         {
+            var review = await Reviews.Find(r => r.Id == reviewId && r.UserId == userId)
+                              .FirstOrDefaultAsync();
+
+            if (review == null) return false;
+
+            var rating = review.Rating;
+
+            var restaurantId = review.RestaurantId;
+
             var result = await Reviews.DeleteOneAsync(r => r.Id == reviewId && r.UserId == userId);
+
+            await DecreaseReviewsOnRestaurant(restaurantId, rating);
+
             return result.DeletedCount > 0;
+        }
+
+        public async Task DecreaseReviewsOnRestaurant(Guid restaurantId, int rating)
+        {
+            var restaurant = await Restaurants.Find(r => r.Id == restaurantId)
+                                      .FirstOrDefaultAsync();
+
+            if (restaurant == null) return;
+
+            // ✅ update values
+            restaurant.TotalReviews -= 1;
+            restaurant.TrendingScore -= rating;
+
+            if (restaurant.TotalReviews <= 0)
+            {
+                restaurant.TotalReviews = 0;
+                restaurant.TrendingScore = 0;
+                restaurant.AverageRating = 0;
+            }
+            else
+            {
+                restaurant.AverageRating =
+                    (double)restaurant.TrendingScore / restaurant.TotalReviews;
+    }
+
+    await Restaurants.ReplaceOneAsync(r => r.Id == restaurantId, restaurant);
+        }
+
+        public async Task<MongoRestaurant> GetRestaurantByReviewId(Guid reviewId)
+        {
+            var review = await Reviews.Find(r => r.Id == reviewId).FirstOrDefaultAsync();
+            if (review == null) return null;
+            return await GetRestaurantById(review.RestaurantId);
         }
 
         public async Task<MongoUser> GetUserById(Guid id)
@@ -207,6 +259,8 @@ namespace TastyTrails.Services
             var res = await Users.DeleteOneAsync(u => u.Id == id);
             return res.DeletedCount > 0;
         }
+
+        
 
         public async Task<Guid> PostUserSavedRestaurnts(Guid userId, Guid restaurantId)
         {

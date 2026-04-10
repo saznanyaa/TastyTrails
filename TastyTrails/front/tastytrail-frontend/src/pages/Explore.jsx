@@ -33,6 +33,8 @@ export default function Explore() {
             `http://localhost:5146/api/get/restaurants/${restaurant.id}/mngReviews`
             );
             setReviews(res.data);
+
+            await axios.post(`http://localhost:5146/api/post/${restaurant.id}/view`);
         } catch (err) {
             console.error(err);
         }
@@ -47,37 +49,51 @@ export default function Explore() {
     };
 
     useEffect(() => {
-    const userId = localStorage.getItem("userId");
-    const token = localStorage.getItem("authToken");
+        const userId = localStorage.getItem("userId");
+        const token = localStorage.getItem("authToken");
 
-    if (!userId || !token) return;
+        const fetchData = async () => {
+            try {
+                const allPromise = axios.get("http://localhost:5146/api/get/mongoRestaurants");
+                const trendingPromise = axios.get("http://localhost:5146/api/get/restaurants/trending/Beograd");
 
-    Promise.all([
-        axios.get("http://localhost:5146/api/get/mongoRestaurants"),
-        axios.get("http://localhost:5146/api/get/restaurants/trending/Beograd"),
-        axios.get(`http://localhost:5146/api/user/${userId}/recommendations/Beograd`, {
-        headers: { Authorization: `Bearer ${token}` },
-        }),
-    ])
-        .then(([allRes, trendingRes, recommendedRes]) => {
-        console.log("All restaurants:", allRes.data);
-        console.log("Trending:", trendingRes.data);
-        console.log("Recommended:", recommendedRes.data);        
+                let recommendedPromise = null;
 
-        const restaurantMap = new Map();
+                if (userId && token) {
+                    recommendedPromise = axios.get(
+                        `http://localhost:5146/api/user/${userId}/recommendations/Beograd`,
+                        { headers: { Authorization: `Bearer ${token}` } }
+                    );
+                }
 
-        allRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "default" }));
-        trendingRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "trending" }));
-        recommendedRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "recommended" }));
+                const [allRes, trendingRes, recommendedRes] = await Promise.all([
+                    allPromise,
+                    trendingPromise,
+                    recommendedPromise
+                ]);
 
-        setAllRestaurants(allRes.data);
-        setTrending(trendingRes.data);
-        setRecommended(recommendedRes.data);
-        setRestaurants(Array.from(restaurantMap.values()));
-        })
-        .catch(err => {
-        console.error("Error fetching restaurants:", err.response || err.message);
-        });
+                const restaurantMap = new Map();
+
+                allRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "default" }));
+                trendingRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "trending" }));
+
+                if (recommendedRes) {
+                    recommendedRes.data.forEach(r =>
+                        restaurantMap.set(r.id, { ...r, type: "recommended" })
+                    );
+                    setRecommended(recommendedRes.data);
+                }
+
+                setAllRestaurants(allRes.data);
+                setTrending(trendingRes.data);
+                setRestaurants(Array.from(restaurantMap.values()));
+
+            } catch (err) {
+                console.error("Error fetching restaurants:", err.response || err.message);
+            }
+        };
+
+        fetchData();
     }, []);
 
     console.log("ALL:", allRestaurants.length);

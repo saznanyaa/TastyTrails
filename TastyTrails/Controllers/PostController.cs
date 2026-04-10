@@ -132,90 +132,13 @@ namespace TastyTrails.Controllers
 
             await _cassandra.InsertRestaurantView(view);
 
+            var restaurant = await _mongo.GetRestaurantById(id);
+
+            await _mongo.UpdateTrendingScore(id, restaurant.TrendingScore + 2);
+
             return Ok();
         }
-        
-
-        //-------------------------------------------------------------------------------
-        //[HttpPost("cuisine")]
-        // public async Task<IActionResult> CreateCuisine([FromBody] CuisineNode cuisine)
-        // {
-        //     await _neo4jService.CreateCuisineNodeAsync(cuisine);
-        //     return Ok($"Kuhinja {cuisine.Name} je kreirana.");
-        // }
-
-        //-------------------------------------------------------------------------------
-        //[HttpPost("restaurant/serve-cuisine")]
-        // public async Task<IActionResult> ServeCuisine(string restaurantId, string cuisineId)
-        // {
-        //     await _neo4jService.ConnectRestaurantToCuisineAsync(restaurantId, cuisineId);
-        //     return Ok("Restoran je uspešno povezan sa tipom kuhinje.");
-        // }
-
-        //--------------------------------------------------------------------------------
-        //[HttpPost("link-external-review")]
-        //     public async Task<IActionResult> LinkExternalReview(
-        // [FromQuery] string userId,
-        // [FromQuery] string restaurantId,
-        // [FromBody] ReviewRelationNode externalData)
-        //     {
-        //         try
-        //         {
-        //             await _neo4jService.LinkExternalReviewAsync(userId, restaurantId, externalData);
-        //             return Ok(new
-        //             {
-        //                 Message = $"Uspešno povezana recenzija za korisnika {userId} i restoran {restaurantId}.",
-        //                 MongoId = externalData.MongoReviewId,
-        //                 CassandraId = externalData.CassandraRatingId
-        //             });
-        //         }
-        //         catch (Exception ex)
-        //         {
-        //             return BadRequest($"Greška prilikom povezivanja: {ex.Message}");
-        //         }
-        //     }
-
-        //----------------------------------------------------------------------------------------
-        /*Authorize]
-         [HttpPost("user/follow")]
-         public async Task<IActionResult> FollowUser([FromQuery] string targetId)
-         {
-             // 1. Uzmi ID ulogovanog korisnika (Korisnik A) iz JWT tokena
-             var followerId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-
-             if (string.IsNullOrEmpty(followerId))
-                 return Unauthorized("Niste ulogovani.");
-
-             if (followerId == targetId)
-                 return BadRequest("Ne možete zapratiti sami sebe.");
-
-             try
-             {
-                 // 2. NEO4J: Kreiraj vezu (FOLLOWS)
-                 await _neo4jService.FollowUserAsync(followerId, targetId);
-
-                 // 3. MONGO: Ažuriraj liste i brojače
-                 // Kod onoga koga pratiš (Profil B): dodaj sebe u Followers i uvećaj followersCount
-                 var filterTarget = Builders<MongoUser>.Filter.Eq(u => u.Id, Guid.Parse(targetId));
-                 var updateTarget = Builders<MongoUser>.Update
-                     .AddToSet("Followers", followerId)
-                     .Inc("FollowersCount", 1);
-                 await _users.UpdateOneAsync(filterTarget, updateTarget);
-
-                 // Kod tebe (Profil A): dodaj njega u Following i uvećaj followingCount
-                 var filterMe = Builders<MongoUser>.Filter.Eq(u => u.Id, Guid.Parse(followerId));
-                 var updateMe = Builders<MongoUser>.Update
-                     .AddToSet("Following", targetId)
-                     .Inc("FollowingCount", 1);
-                 await _users.UpdateOneAsync(filterMe, updateMe);
-
-                 return Ok(new { Message = "Uspešno zapraćeno!" });
-             }
-             catch (Exception ex)
-             {
-                 return BadRequest($"Greška: {ex.Message}");
-             }
-         }*/
+//--------------------------------------------------------------------------------------------
 
         [Authorize]
         [HttpPost("user/follow")]
