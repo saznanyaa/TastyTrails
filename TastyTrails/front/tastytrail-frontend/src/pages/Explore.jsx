@@ -190,17 +190,27 @@ export default function Explore() {
                 {selectedRestaurant?.id === r.id ? (
                 reviews.length > 0 ? (
                     reviews.map((rev) => (
-                    <div key={rev.id} style={{ marginBottom: "8px" }}>
-                        <strong>{rev.rating}⭐</strong>
-                        <br />
-                        <span>{rev.comment}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <img
+                            src={rev.profilePicture || "/icons/default-avatar.png"}
+                            style={{
+                            width: "30px",
+                            height: "30px",
+                            borderRadius: "50%"
+                            }}
+                        />
+
+                    <div>
+                        <strong>{rev.name}</strong>
+                        <div>{rev.rating}⭐</div>
+                        <div>{rev.comment}</div>
+                    </div>
                     </div>
                     ))
                 ) : (
-                    <p>No reviews yet</p>
-                )
-                ) : (
-                <p>Click to load reviews...</p>
+                    <p>No reviews yet.</p>
+                )) : (
+                <p>Click marker to load reviews...</p>
                 )}
             </div>
             </Popup>
