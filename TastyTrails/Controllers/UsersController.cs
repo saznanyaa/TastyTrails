@@ -172,6 +172,7 @@ namespace TastyTrails.Controllers
             }
         }
 
+//if recently viewed gets imlemented
         [HttpGet("{id}/visited")]
         public async Task<IActionResult> GetVisitedRestaurants(Guid id)
         {
@@ -213,22 +214,7 @@ namespace TastyTrails.Controllers
             await _neo4jService.UnfollowUserAsync(currentId.ToString(), targetId.ToString());
             return Ok(new { message = "Unfollowed successfully", followerId = currentId, followedId = targetId });
         }
-
-        [HttpPost("connect/{restaurantId}")]
-        public async Task<IActionResult> Connect(Guid restaurantId)
-        {
-            var userIdClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
-            if (string.IsNullOrEmpty(userIdClaim))
-                return Unauthorized();
-
-            var currentId = Guid.Parse(userIdClaim);
-            var type = "LIKE";
-
-            await _neo4jService.ConnectUserToRestaurantAsync(currentId.ToString(), restaurantId.ToString(), type);
-
-            return Ok(new { message = "Connected successfully." });
-        }  
+  
 //---reviews--------------------------------------------------------------------------------
         [HttpPost("{id}/review/{restaurantId}")]
         public async Task<IActionResult> PostRestaurantReview(Guid id, Guid restaurantId, [FromBody] MongoReview mongoReview)
@@ -256,7 +242,8 @@ namespace TastyTrails.Controllers
 
             return Ok(new { message = "Review posted successfully."});
         }
-//you do not delete reviews from cassandra, because you can't undo an action there, because it stores history, not reviews themselves
+        
+        //you do not delete reviews from cassandra, because you can't undo an action there, because it stores history, not reviews themselves
         [HttpDelete("{userId}/review/{rId}")]
         public async Task<IActionResult> DeleteReview(Guid userId, Guid rId)
         {
@@ -327,6 +314,5 @@ namespace TastyTrails.Controllers
             }
         }
 
-        
     }
 }

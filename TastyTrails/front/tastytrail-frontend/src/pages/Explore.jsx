@@ -11,6 +11,7 @@ export default function Explore() {
     const [allRestaurants, setAllRestaurants] = useState([]);
     const [trending, setTrending] = useState([]);
     const [recommended, setRecommended] = useState([]);
+    const [savedRestaurants, setSavedRestaurants] = useState([]);
 
     const defaultIcon = L.icon({
         iconUrl:"/icons/restaurant.png",
@@ -48,6 +49,38 @@ export default function Explore() {
         }
     };
 
+    const isSaved = (restaurantId) => {
+        return savedRestaurants.includes(restaurantId);
+    };
+
+    const toggleSave = async (restaurantId) => {
+        const userId = localStorage.getItem("userId");
+        const token = localStorage.getItem("authToken");
+
+        try {
+            if (isSaved(restaurantId)) {
+            await axios.delete(
+                `http://localhost:5146/api/user/${userId}/saved/${restaurantId}`,
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            setSavedRestaurants(prev =>
+                prev.filter(id => id !== restaurantId)
+            );
+            } else {
+            await axios.post(
+                `http://localhost:5146/api/user/${userId}/saved/${restaurantId}`,
+                {},
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            setSavedRestaurants(prev => [...prev, restaurantId]);
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
     useEffect(() => {
         const userId = localStorage.getItem("userId");
         const token = localStorage.getItem("authToken");
@@ -56,6 +89,10 @@ export default function Explore() {
             try {
                 const allPromise = axios.get("http://localhost:5146/api/get/mongoRestaurants");
                 const trendingPromise = axios.get("http://localhost:5146/api/get/restaurants/trending/Beograd");
+                const savedPromise = axios.get(
+                    `http://localhost:5146/api/user/${userId}/saved`,
+                    { headers: { Authorization: `Bearer ${token}` } 
+                });
 
                 let recommendedPromise = null;
 
@@ -66,10 +103,11 @@ export default function Explore() {
                     );
                 }
 
-                const [allRes, trendingRes, recommendedRes] = await Promise.all([
+                const [allRes, trendingRes, recommendedRes, savedRes] = await Promise.all([
                     allPromise,
                     trendingPromise,
-                    recommendedPromise
+                    recommendedPromise,
+                    savedPromise
                 ]);
 
                 const restaurantMap = new Map();
@@ -87,6 +125,7 @@ export default function Explore() {
                 setAllRestaurants(allRes.data);
                 setTrending(trendingRes.data);
                 setRestaurants(Array.from(restaurantMap.values()));
+                setSavedRestaurants(savedRes.data.map(r => r.id));
 
             } catch (err) {
                 console.error("Error fetching restaurants:", err.response || err.message);
@@ -99,6 +138,7 @@ export default function Explore() {
     console.log("ALL:", allRestaurants.length);
     console.log("TRENDING:", trending.length);
     console.log("RECOMMENDED:", recommended.length);
+    console.log("SAVED:", savedRestaurants.length);
   
     return (
     <div style={{ flex: 1, display: "flex" }}>
@@ -121,10 +161,28 @@ export default function Explore() {
             }}
         >
             <Popup>
-            <div style={{ minWidth: "200px", maxHeight: "200px", overflowY: "auto" }}>
+            <div style={{ position: "relative", minWidth: "200px", maxHeight: "200px", overflowY: "auto" }}>
+                <button
+                onClick={() => toggleSave(r.id)}
+                style={{
+                    position: "absolute",
+                    top: "5px",
+                    right: "5px",
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    fontSize: "18px"
+                }}
+                >
+                <img
+                src={isSaved(r.id) ? "/icons/bookmark (1).png" : "/icons/bookmark.png"}
+                alt="save"
+                style={{width: "20px", height: "20px"}}
+                />
+                </button>
                 <h4 style={{ margin: 0 }}>{r.name}</h4>
                 <p style={{ margin: "5px 0" }}>
-                ⭐ {(r.averageRating ?? 0).toFixed(1)} ({r.reviewCount ?? 0})
+                ⭐ {(r.averageRating ?? 0).toFixed(1)} ({r.totalReviews ?? 0})
                 </p>
 
                 <hr />

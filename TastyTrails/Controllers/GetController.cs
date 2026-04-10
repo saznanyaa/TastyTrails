@@ -22,14 +22,6 @@ namespace TastyTrails.Controllers
             _neo4jService = neo4j;
         }
 
-        [HttpGet("restIdfromReview/{reviewId}")]
-        public async Task<IActionResult> GetRestaurantIdFromReview(Guid reviewId)
-        {
-            var restaurant = await _mongo.GetRestaurantByReviewId(reviewId);
-            if (restaurant == null) return NotFound("Recenzija nije pronađena.");
-            return Ok(restaurant.Id);
-        }
-
         //trending resturants
         [HttpGet("restaurants/trending/{city}")]
         public async Task<IActionResult> GetTrendingRestaurants(string city)
@@ -71,7 +63,7 @@ namespace TastyTrails.Controllers
             return Ok(res);
         }
 
-        //---restaurant_views------------------------------------------------------------
+        //---restaurant_views if recently viewed gets implemented------------------------------------------------------------
         [HttpGet("restaurants/{id}/views")]
         public async Task<IActionResult> GetRestaurantViews(Guid id)
         {
@@ -112,20 +104,6 @@ namespace TastyTrails.Controllers
             return Ok(ratings);
         }
 
-        [HttpGet("restaurants/{id}/ratings/user/{userId}")]
-        public async Task<IActionResult> GetRestaurantRatingsByUser(Guid id, Guid userId)
-        {
-            var ratings = await _cassandra.GetRestaurantRatingsByUser(id, userId);
-            // var mngReviews = await _mongo.GetReviewsByUser(userId);
-            // var mngRatings = new List<int>();
-            // foreach(var r in mngReviews)
-            // {
-            //     mngRatings.Add(r.Rating);
-            // }
-            //nmg da se setim koja je fora s ovim tkd neka ga za sad ovako
-            return Ok(ratings);
-        }
-
         //---restaurant_review_events-------------------------------------------------------------------------
         [HttpGet("restaurants/{id}/reviews")]
         public async Task<IActionResult> GetRestaurantReviews(Guid id)
@@ -143,6 +121,7 @@ namespace TastyTrails.Controllers
             return Ok(reviews);
         }
 
+        //to show most recent reviews in the popup
         [HttpGet("restaurants/{id}/reviewsfromto")]
         public async Task<IActionResult> GetRestaurantReviewsToFrom(Guid id, [FromQuery]DateTime to, [FromQuery]DateTime ffrom)
         {
@@ -248,14 +227,6 @@ namespace TastyTrails.Controllers
             var r = await _mongo.GetRestaurantsNearMe(lat, lng, radius);
             return Ok(r);
         }
-        //-----------------------------------------------------------------------------
-
-        [HttpGet("reviews/{id}/mongouser/reviews")]
-        public async Task<IActionResult> GetMongoReviewsByUser(Guid id)
-        {
-            var r = await _mongo.GetReviewsByUser(id);
-            return Ok(r);
-        }
 
         //-----------------------------------------------------------------------
         [HttpGet("users/search")] // Path: /api/get/users/search
@@ -282,15 +253,6 @@ namespace TastyTrails.Controllers
         {
             var likes = await _neo4jService.GetUserLikesAsync(userId);
             return Ok(likes);
-        }
-
-        //--------------reccomendation-----------------------------------------------
-        [HttpGet("user/recommendations/{userId}")]
-        public async Task<IActionResult> GetRecommendations(string userId)
-        {
-            var list = await _neo4jService.GetSmartRecommendationsAsync(userId);
-            if (list == null || list.Count == 0) return NotFound("Nema preporuka.");
-            return Ok(list);
         }
     }
 }
