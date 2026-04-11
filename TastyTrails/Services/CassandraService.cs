@@ -370,7 +370,6 @@ namespace TastyTrails.Services
         }
 
         //---trending_results----------------------------------------------------------------------
-        
         public async Task<List<(Guid id, long score)>> GetTrendingByCity(string city)
         {
             var rn = DateTime.UtcNow;

@@ -58,7 +58,7 @@ export default function Profile() {
                     }
                 }
 
-                const reviewsRes = await fetch(`http://localhost:5146/api/get/reviews/${id}/mongouser/reviews`, {
+                const reviewsRes = await fetch(`http://localhost:5146/api/user/${id}/reviews`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 

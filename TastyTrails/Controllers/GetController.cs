@@ -42,7 +42,7 @@ namespace TastyTrails.Controllers
                     mongoRestaurants.Add(restaurant);
             }
 
-            var res = top.Select(t =>
+            var res = top.Select(async t =>
             {
                 var mongo = mongoRestaurants.FirstOrDefault(m => m.Id == t.id);
 
@@ -51,67 +51,86 @@ namespace TastyTrails.Controllers
                     Id = t.id,
                     Name = mongo != null ? mongo.Name : "Nepoznato",
                     City = city,
-                    AverageRating = mongo != null ? mongo.AverageRating : 0,
+                    AverageRating = await _cassandra.GetAverageRating(t.id) ?? 0,
                     TotalReviews = mongo != null ? mongo.TotalReviews : 0,
                     Score = t.score,
                     Latitude = mongo?.Coordinates?.Lat,
                     Longitude = mongo?.Coordinates?.Lng
                 };
             }
-            ).OrderByDescending(r => r.Score).ToList();
+            );
 
-            return Ok(res);
+            var result = (await Task.WhenAll(res)).OrderByDescending(r => r.Score).ToList();
+
+            return Ok(result);
         }
 
-        //---restaurant_views if recently viewed gets implemented------------------------------------------------------------
-        [HttpGet("restaurants/{id}/views")]
-        public async Task<IActionResult> GetRestaurantViews(Guid id)
+        [HttpGet("{id}/analytics/weekly")]
+        public async Task<IActionResult> GetWeeklyAnalytics(Guid id)
         {
-            var views = await _cassandra.GetRestaurantViewsAsync(id);
-    
-            return Ok(views);
+            var to = DateTime.UtcNow;
+            var from = to.AddDays(-7);
+
+            var views = await _cassandra.GetRestaurantViewsFromToAsync(id, from, to);
+            var checkins = await _cassandra.GetRestaurantCheckinsFromTo(id, from, to);
+            var reviews = await _cassandra.GetRestaurantReviewsFromTo(id, from, to);
+            var ratings = await _cassandra.GetAverageRating(id);
+
+            var viewsCount = views.Count();
+            var checkinsCount = checkins.Count();
+            var reviewsCount = reviews.Count();
+
+            var viewsByDay = views.GroupBy(v => v.ViewedAt.Date)
+                                .Select(g => new { Date = g.Key, Count = g.Count() })
+                                .OrderBy(g => g.Date)
+                                .ToList();
+
+            var analytics = new
+            {
+                RestaurantId = id,
+                AverageRating = ratings ?? 0,
+                ViewsCount = viewsCount,
+                CheckinsCount = checkinsCount,
+                ReviewsCount = reviewsCount,
+                ViewsByDay = viewsByDay.Select(v => new { Date = v.Date.ToString("yyyy-MM-dd"), Count = v.Count }).ToList()
+            };
+
+            return Ok(analytics);
         }
 
-        [HttpGet("restaurants/{id}/viewsfromto")]
-        public async Task<IActionResult> GetRestaurantViewsToFrom(Guid id, [FromQuery]DateTime to, [FromQuery]DateTime ffrom)
-        {
-            to = to.ToUniversalTime();
-            ffrom = ffrom.ToUniversalTime();
-            var views = await _cassandra.GetRestaurantViewsFromToAsync(id, ffrom, to);
-            return Ok(views);
-        }
-
-        [HttpGet("restaurants/{id}/viewscount")]
-        public async Task<IActionResult> GetRestaurantViewsCount(Guid id)
-        {
-            var count = await _cassandra.GetRestaurantViewCountAsync(id);
-            return Ok(new {RestaurantId = id, ViewCount = count});
-        }
-
-        //---user_saved_restaurants------------------------------------------------------------------------
-        [HttpGet("users/{userId}/saved")]
-        public async Task<IActionResult>GetUserSavedRestaurants(Guid userId)
-        {
-            var saved = await _cassandra.GetUserSavedRestaurants(userId);
-            return Ok(saved);
-        }
-
-        //---restaurant_ratings---------------------------------------------------------------------------
-        [HttpGet("restaurants/{id}/ratings")]
-        public async Task<IActionResult> GetRestaurantRatings(Guid id)
-        {
-            var ratings = await _cassandra.GetRestaurantRatings(id);
-            return Ok(ratings);
-        }
-
+       
         //---restaurant_review_events-------------------------------------------------------------------------
-        [HttpGet("restaurants/{id}/reviews")]
-        public async Task<IActionResult> GetRestaurantReviews(Guid id)
+        [HttpGet("{id}/reviews/recent")]
+        public async Task<IActionResult> GetRecentReviews(Guid id)
         {
-            var reviews = await _cassandra.GetRestaurantReview(id);
-            var r = await _mongo.GetRestaurantReviews(id);
-    
-            return Ok($"cassandra: {reviews}, mongo: {r}");
+            var to = DateTime.UtcNow;
+            var from = to.AddDays(-3);
+
+            var reviews = await _cassandra.GetRestaurantReviewsFromTo(id, from, to);
+
+            var latest = reviews
+                .OrderByDescending(r => r.ReviewedAt)
+                .Take(2)
+                .ToList();
+
+            var result = new List<object>();
+            foreach(var r in latest)
+            {
+                var mongoReview = await _mongo.GetReviewByRestAndUser(r.RestaurantId, r.UserId);
+
+                var mongoUser = await _mongo.GetUserById(r.UserId);
+
+                result.Add(new
+                {
+                    UserId = r.UserId,
+                    Username = mongoUser?.Username ?? "Nepoznato",
+                    ProfilePicture = mongoUser?.ProfileImage ?? "Nema slike",
+                    Rating = mongoReview?.Rating ?? 0,
+                    Comment = mongoReview?.Comment ?? "Nema komentara",
+                    ReviewedAt = r.ReviewedAt
+                });
+            }
+            return Ok(result);
         }
 
         [HttpGet("restaurants/{id}/mngReviews")]

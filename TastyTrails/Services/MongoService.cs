@@ -198,7 +198,6 @@ namespace TastyTrails.Services
 
             if (restaurant == null) return;
 
-            // ✅ update values
             restaurant.TotalReviews -= 1;
             restaurant.TrendingScore -= rating;
 
@@ -260,8 +259,7 @@ namespace TastyTrails.Services
             return res.DeletedCount > 0;
         }
 
-        
-
+    
         public async Task<Guid> PostUserSavedRestaurnts(Guid userId, Guid restaurantId)
         {
             var filter = Builders<MongoUser>.Filter.Eq(u => u.Id, userId);

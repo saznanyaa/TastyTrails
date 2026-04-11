@@ -203,7 +203,7 @@ namespace TastyTrails.Controllers
             return Ok(new { message = "Followed successfully", followerId = currentId, followedId = targetId });
         }
 
-        [HttpPost("unfollow/{targetId}")]
+        [HttpDelete("unfollow/{targetId}")]
         public async Task<IActionResult> Unfollow(Guid targetId)
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
@@ -253,6 +253,23 @@ namespace TastyTrails.Controllers
             var deleted = await _mongo.DeleteReview(rId, userId);
             if(!deleted) return NotFound("Review not found!");
             return Ok(deleted);
+        }
+
+        [HttpGet("{id}/reviews")]
+        public async Task<IActionResult> GetUserReviews(Guid id)
+        {
+            var userIdFromToken = GetUserIdFromToken();
+            if (userIdFromToken != id) return Forbid();
+
+            try
+            {
+                var reviews = await _mongo.GetReviewsByUser(id);
+                return Ok(reviews);
+            }
+            catch
+            {
+                return NotFound();
+            }
         }
 
 //---recommendations--------------------------------------------------------------------------------
