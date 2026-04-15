@@ -273,5 +273,14 @@ namespace TastyTrails.Controllers
             var likes = await _neo4jService.GetUserLikesAsync(userId);
             return Ok(likes);
         }
+
+
+        //----------------------------------------------------------------------------
+        [HttpGet("reviews/{userId}")]
+        public async Task<IActionResult> GetUserReviews(Guid userId)
+        {
+            var reviews = await _mongo.GetReviewsByUser(userId);
+            return Ok(reviews);
+        }
     }
 }

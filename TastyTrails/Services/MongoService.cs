@@ -1,10 +1,11 @@
-﻿using MongoDB.Driver;
+﻿using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.Extensions.Options;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using MongoDB.Driver.GeoJsonObjectModel;
 using TastyTrails.Configurations;
 using TastyTrails.Models;
-using MongoDB.Driver.GeoJsonObjectModel;
 using TastyTrails.Models.DTOs;
-using MongoDB.Bson;
 
 namespace TastyTrails.Services
 {
@@ -319,6 +320,45 @@ namespace TastyTrails.Services
             var updateTarget = Builders<MongoUser>.Update.Pull(u => u.Followers, currentId);
             await Users.UpdateOneAsync(u => u.Id == currentId, updateCurrent);
             await Users.UpdateOneAsync(u => u.Id == targetId, updateTarget);
+        }
+
+        public async Task<bool> UpdateReviewAsync(string reviewId, int newRating, string newComment)
+        {
+            // 1. Provera validnosti stringa
+            if (string.IsNullOrEmpty(reviewId)) return false;
+
+            // 2. Filter - pošto tvoj model kaže BsonType.String, 
+            // MongoDB driver očekuje da porediš sa Guid objektom koji on interno mapira u string
+            if (!Guid.TryParse(reviewId, out Guid guidId)) return false;
+
+            var filter = Builders<MongoReview>.Filter.Eq(r => r.Id, guidId);
+
+            // 3. Update operacija
+            var update = Builders<MongoReview>.Update
+                .Set(r => r.Rating, newRating)
+                .Set(r => r.Comment, newComment)
+                .Set(r => r.UpdatedAt, DateTime.UtcNow);
+
+            var result = await Reviews.UpdateOneAsync(filter, update);
+
+            return result.MatchedCount > 0; // Bolje MatchedCount jer ModifiedCount može biti 0 ako ništa nisi promenio
+        }
+
+        public async Task<bool> DeleteReviewAsync(string reviewId)
+        {
+            if (!Guid.TryParse(reviewId, out Guid guidId))
+            {
+                return false;
+            }
+
+            // Filter traži recenziju sa tim Guid-om
+            var filter = Builders<MongoReview>.Filter.Eq(r => r.Id, guidId);
+
+            // Brisanje iz kolekcije "reviews"
+            var result = await Reviews.DeleteOneAsync(filter);
+
+            // Vraća true ako je barem jedan dokument obrisan
+            return result.DeletedCount > 0;
         }
     }
 }
