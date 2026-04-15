@@ -145,6 +145,9 @@ namespace TastyTrails.Controllers
             {
                 var mongoReview = await _mongo.GetReviewByRestAndUser(r.RestaurantId, r.UserId);
 
+                if(mongoReview == null)
+                    continue;
+
                 var mongoUser = await _mongo.GetUserById(r.UserId);
 
                 result.Add(new
@@ -152,7 +155,7 @@ namespace TastyTrails.Controllers
                     UserId = r.UserId,
                     Username = mongoUser?.Username ?? "Nepoznato",
                     ProfilePicture = mongoUser?.ProfileImage ?? "Nema slike",
-                    Rating = mongoReview?.Rating ?? 0,
+                    Rating = mongoReview.Rating,
                     Comment = mongoReview?.Comment ?? "Nema komentara",
                     ReviewedAt = r.ReviewedAt
                 });
