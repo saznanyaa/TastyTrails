@@ -1,7 +1,10 @@
-using System.Net.Http;
-using Cassandra.DataStax.Graph;
+﻿using System.Net.Http;
 using Newtonsoft.Json.Linq;
 using TastyTrails.Models;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using System;
+using System.Linq;
 
 namespace TastyTrails.Services
 {
@@ -12,74 +15,80 @@ namespace TastyTrails.Services
         public OverpassService()
         {
             _httpClient = new HttpClient();
+            // OBAVEZNO: Overpass zahteva User-Agent, inače blokira zahteve
+            _httpClient.DefaultRequestHeaders.Add("User-Agent", "TastyTrails/1.0");
         }
 
-        //(44.7866,20.4489,44.8166,20.4789)BG
-        //(45.20,19.78,45.30,19.90)NS
         public async Task<List<SeedRestaurant>> GetRestaurantsAsync(string city)
         {
             string bbox = city switch
             {
                 "Beograd" => "(44.7866,20.4489,44.8166,20.4789)",
                 "Novi Sad" => "(45.20,19.78,45.30,19.90)",
+                "Nis" => "(43.28,21.85,43.35,21.95)", // Dodao sam i Niš za svaki slučaj
                 _ => throw new ArgumentException("Unsupported city!")
             };
-            var query = $@"
-            [out:json];
-            node[""amenity""=""restaurant""]{bbox};
-            out;
-            ";
 
-            var content = new StringContent(query);
+            // Upit mora biti spakovan ovako
+            var query = $@"[out:json];node[""amenity""=""restaurant""]{bbox};out;";
 
-            var response = await _httpClient.PostAsync("https://overpass-api.de/api/interpreter", content);
-
-            var json = await response.Content.ReadAsStringAsync();
-            var data = JObject.Parse(json);
-
-            var restaurants = new List<SeedRestaurant>();
-
-            foreach (var element in data["elements"])
+            // KLJUČNA PROMENA: Podaci se moraju poslati kao "data" parametar
+            var content = new FormUrlEncodedContent(new[]
             {
-                var tags = element["tags"];
-                if (tags == null)
-                    continue;
+                new KeyValuePair<string, string>("data", query)
+            });
 
-                var nameToken = tags["name"];
-                if (nameToken == null)
-                    continue;
+            try
+            {
+                var response = await _httpClient.PostAsync("https://overpass-api.de/api/interpreter", content);
 
-                var latToken = element["lat"];
-                var lonToken = element["lon"];
-                if (latToken == null || lonToken == null)
-                    continue;
-                
-                var cuisines = tags["cuisine"]?.ToString().Split(';') ?? new string[] { "unknown" };
-
-                var sourceIdToken = element["id"];
-                if(sourceIdToken == null) continue;
-                var sourceId = sourceIdToken.ToString();
-
-                var restaurantId = Guid.NewGuid();
-
-                foreach (var cuisine in cuisines)
+                if (!response.IsSuccessStatusCode)
                 {
-                    restaurants.Add(new SeedRestaurant
-                    {
-                        Id = restaurantId,
-                        City = city,
-                        Name = nameToken.ToString(),
-                        Latitude = latToken.ToObject<double>(),
-                        Longitude = lonToken.ToObject<double>(),
-                        Cuisine = cuisine.Trim(),
-                        SourceId = sourceId
-                    });
+                    var errorBody = await response.Content.ReadAsStringAsync();
+                    throw new Exception($"Overpass API greška: {response.StatusCode}. Detalji: {errorBody}");
                 }
+
+                var json = await response.Content.ReadAsStringAsync();
+                var data = JObject.Parse(json);
+                var restaurants = new List<SeedRestaurant>();
+
+                if (data["elements"] == null) return restaurants;
+
+                foreach (var element in data["elements"])
+                {
+                    var tags = element["tags"];
+                    if (tags == null || tags["name"] == null) continue;
+
+                    var latToken = element["lat"];
+                    var lonToken = element["lon"];
+                    if (latToken == null || lonToken == null) continue;
+
+                    var cuisines = tags["cuisine"]?.ToString().Split(';') ?? new string[] { "unknown" };
+                    var sourceId = element["id"]?.ToString();
+                    var restaurantId = Guid.NewGuid();
+
+                    foreach (var cuisine in cuisines)
+                    {
+                        restaurants.Add(new SeedRestaurant
+                        {
+                            Id = restaurantId,
+                            City = city,
+                            Name = tags["name"].ToString(),
+                            Latitude = latToken.ToObject<double>(),
+                            Longitude = lonToken.ToObject<double>(),
+                            Cuisine = cuisine.Trim(),
+                            SourceId = sourceId
+                        });
+                    }
+                }
+
+                return restaurants.Take(25).ToList();
             }
-
-            Console.WriteLine(response.StatusCode);
-
-            return restaurants.Take(25).ToList(); 
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Greška u OverpassService: {ex.Message}");
+                throw;
+            }
         }
     }
 }

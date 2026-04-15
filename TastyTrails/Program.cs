@@ -104,7 +104,7 @@ var app = builder.Build();
 
 // --- ISPRAVAN REDOSLED MIDDLEWARE-A ---
 
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 
 // CORS mora pre Auth
 app.UseCors("AllowFrontend");

@@ -6,7 +6,6 @@ export default function Profile() {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [profileImage, setProfileImage] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
     const [reviews, setReviews] = useState([]);
 
     const [isFollowing, setIsFollowing] = useState(false);
@@ -15,14 +14,6 @@ export default function Profile() {
     const [searchTerm, setSearchTerm] = useState("");
     const [searchResults, setSearchResults] = useState([]);
 
-    const [newReview, setNewReview] = useState({
-        name: '',
-        location: '',
-        cuisine: '',
-        rating: '',
-        comment: ''
-    });
-
     const fileInputRef = useRef(null);
     const { id } = useParams();
     const navigate = useNavigate();
@@ -30,11 +21,16 @@ export default function Profile() {
     const loggedInUserId = localStorage.getItem("userId");
     const isOwnProfile = id === loggedInUserId;
 
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [currentReview, setCurrentReview] = useState(null); // Recenzija koju menjamo
+
     // 1. Fetch Podataka
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
+            setReviews([]);
             const authToken = localStorage.getItem("authToken");
+            const currentLoggedInId = localStorage.getItem("userId");
 
             try {
                 const userRes = await fetch(`http://localhost:5146/api/get/user/${id}`, {
@@ -45,36 +41,42 @@ export default function Profile() {
                     const userData = await userRes.json();
                     setUser(userData);
 
-                    // Rešavamo problem velikih/malih slova u JSON ključevima
                     const followersList = userData.followers || userData.Followers || [];
                     setFollowersCount(followersList.length);
 
-                    if (loggedInUserId) {
-                        // FIX: Provera mora biti case-insensitive i raditi sa stringovima
+                    if (currentLoggedInId) {
                         const amIFollowing = followersList.some(fId =>
-                            fId.toString().toLowerCase() === loggedInUserId.toLowerCase()
+                            fId.toString().toLowerCase() === currentLoggedInId.toLowerCase()
                         );
                         setIsFollowing(amIFollowing);
                     }
+                } else if (userRes.status === 401) {
+                    // Ako je token istekao, obriši ga i vrati na login
+                    localStorage.removeItem("authToken");
+                    localStorage.removeItem("userId");
+                    navigate("/login");
                 }
 
-                const reviewsRes = await fetch(`http://localhost:5146/api/user/${id}/reviews`, {
+                const reviewsRes = await fetch(`http://localhost:5146/api/get/reviews/${id}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
 
                 if (reviewsRes.ok) {
                     const reviewsData = await reviewsRes.json();
-                    setReviews(reviewsData);
+                    setReviews(reviewsData || []);
+                } else {
+                    setReviews([]);
                 }
             } catch (err) {
                 console.error("Greška pri učitavanju:", err);
+                setReviews([]);
             } finally {
                 setLoading(false);
             }
         };
 
         if (id) fetchData();
-    }, [id, loggedInUserId]);
+    }, [id, navigate]);
 
     // 2. Search Logic
     useEffect(() => {
@@ -100,16 +102,13 @@ export default function Profile() {
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm]);
 
-    // 3. Follow / Unfollow logika (Sređeno da radi sa tvojim novim backendom)
     const handleFollowToggle = async () => {
         const authToken = localStorage.getItem("authToken");
-
         if (!authToken) {
             alert("Morate biti ulogovani.");
             return;
         }
 
-        // Određujemo endpoint na osnovu trenutnog isFollowing stanja
         const endpoint = isFollowing ? 'unfollow' : 'follow';
         const url = `http://localhost:5146/api/user/${endpoint}/${id}`;
 
@@ -123,85 +122,61 @@ export default function Profile() {
             });
 
             if (res.ok) {
-                // UI update: ako je bilo follow, sad je true, broj raste. Ako je bio unfollow, false, broj opada.
                 setIsFollowing(!isFollowing);
                 setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
-            } else if (res.status === 401) {
-                alert("Sesija je nevažeća (401). Prijavite se ponovo.");
-            } else {
-                const errorText = await res.text();
-                console.error("Server greška:", errorText);
             }
         } catch (err) {
             console.error("Mrežna greška:", err);
         }
     };
 
-    const handleRatingChange = (e) => {
-        let val = e.target.value;
+    //Delete
+    const handleDelete = async (reviewId) => {
+        if (!window.confirm("Da li ste sigurni da želite da obrišete ovu recenziju?")) return;
 
-        // 1. Ako je polje prazno, dozvoli brisanje (prazan string)
-        if (val === '') {
-            setNewReview({ ...newReview, rating: '' });
-            return;
-        }
-
-        // 2. REGEX: Provera da li su uneti samo brojevi. 
-        // Ako nije broj, funkcija se ovde prekida i ne menja stanje (slovo se ne pojavljuje)
-        if (!/^\d+$/.test(val)) {
-            return;
-        }
-
-        // 3. Logika za limit 1-5
-        let numericVal = parseInt(val, 10);
-
-        if (numericVal > 5) {
-            val = '5';
-        } else if (numericVal < 1) {
-            // Dozvoljavamo da ostane šta je kucao dok ne završi, 
-            // ili automatski stavljamo 1 ako je npr. kucao 0
-            val = '1';
-        } else {
-            val = numericVal.toString();
-        }
-
-        setNewReview({ ...newReview, rating: val });
-    };
-
-    const handleSaveReview = async () => {
+        const authToken = localStorage.getItem("authToken");
         try {
-            const authToken = localStorage.getItem("authToken");
-            const generatedId = crypto.randomUUID();
-
-            //i ovo mi se ne svidja kako radi
-            await fetch(`http://localhost:5146/api/post/restaurant`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                body: JSON.stringify({
-                    Id: generatedId,
-                    Name: newReview.name,
-                    Location: newReview.location,
-                    Cuisine: newReview.cuisine
-                })
+            const res = await fetch(`http://localhost:5146/api/user/review/delete/${reviewId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${authToken}` }
             });
 
-            //oovo mora da se proveri!!!!
-            const reviewResponse = await fetch(`http://localhost:5146/api/post/restaurants/${generatedId}/review?userId=${id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${authToken}` },
-                body: JSON.stringify({
-                    rating: parseInt(newReview.rating, 10),
-                    comment: newReview.comment
-                })
-            });
-
-            if (reviewResponse.ok) {
-                alert("Recenzija uspešno sačuvana!");
-                setIsModalOpen(false);
-                window.location.reload();
+            if (res.ok) {
+                // Skloni recenziju iz state-a odmah
+                setReviews(prev => prev.filter(r => (r.id || r.Id) !== reviewId));
+            } else {
+                alert("Greška pri brisanju.");
             }
         } catch (err) {
-            alert("Greška: " + err.message);
+            console.error("Greška:", err);
+        }
+    };
+
+    const openEditModal = (review) => {
+        setCurrentReview({ ...review }); // Kopiramo podatke da ne menjamo direktno u listi dok ne sačuvamo
+        setIsEditModalOpen(true);
+    };
+
+    //Edit
+    const handleUpdateReview = async () => {
+        const authToken = localStorage.getItem("authToken");
+        try {
+            const res = await fetch(`http://localhost:5146/api/user/review/update`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(currentReview)
+            });
+
+            if (res.ok) {
+                // Ažuriraj listu recenzija u state-u
+                setReviews(prev => prev.map(r => (r.id || r.Id) === currentReview.id ? currentReview : r));
+                setIsEditModalOpen(false);
+            }
+        } catch (err) {
+            console.error("Greška pri ažuriranju:", err);
         }
     };
 
@@ -294,17 +269,31 @@ export default function Profile() {
                     {isOwnProfile ? "MOJE RECENZIJE" : "RECENZIJE KORISNIKA"}
                 </h3>
 
-                {isOwnProfile && (
-                    <button className="add-review-btn" onClick={() => setIsModalOpen(true)}>
-                        + DODAJ RECENZIJU
-                    </button>
-                )}
-
                 <div className="reviews-grid">
                     {reviews.map((rev) => (
                         <div key={rev.id || rev.Id} className="review-card">
+
+                            {/* NOVO: Dugmad za Edit i Delete (samo za tvoj profil) */}
+                            {isOwnProfile && (
+                                <div className="review-admin-actions-center">
+                                    <button
+                                        className="action-text-btn edit-link"
+                                        onClick={() => openEditModal(rev)}
+                                    >
+                                        Edit
+                                    </button>
+                                    <span className="action-separator">|</span>
+                                    <button
+                                        className="action-text-btn delete-link"
+                                        onClick={() => handleDelete(rev.id || rev.Id)}
+                                    >
+                                        Delete
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="review-rating">⭐ {rev.rating}</div>
-                            <h4>{rev.name}</h4>
+                            <h4>{rev.name || rev.restaurantName}</h4>
                             <p className="review-cuisine">{rev.cuisine || 'VRSTA HRANE NIJE NAVEDENA'}</p>
                             <p className="review-comment">{rev.comment}</p>
                         </div>
@@ -312,37 +301,27 @@ export default function Profile() {
                     {reviews.length === 0 && <p style={{ color: 'gray', marginTop: '20px' }}>Nema pronađenih recenzija.</p>}
                 </div>
             </div>
-
-            {isModalOpen && (
+            {isEditModalOpen && (
                 <div className="modal-overlay">
-                    <div className="modal-content">
-                        {/* X dugme sada ima samo klasu close-modal bez ikakvog okvira */}
-                        <button className="close-modal" onClick={() => setIsModalOpen(false)}>
-                            &times;
-                        </button>
+                    <div className="edit-modal">
+                        <h3>Izmeni recenziju</h3>
+                        <label>Ocena (1-5):</label>
+                        <input
+                            type="number"
+                            min="1" max="5"
+                            value={currentReview.rating}
+                            onChange={(e) => setCurrentReview({ ...currentReview, rating: e.target.value })}
+                        />
 
-                        <h2 className="section-title">NOVA RECENZIJA</h2>
+                        <label>Komentar:</label>
+                        <textarea
+                            value={currentReview.comment}
+                            onChange={(e) => setCurrentReview({ ...currentReview, comment: e.target.value })}
+                        />
 
-                        <div className="modal-inputs-container">
-                            <input className="modal-input" placeholder="Ime restorana..." value={newReview.name} onChange={(e) => setNewReview({ ...newReview, name: e.target.value })} />
-                            <input className="modal-input" placeholder="Lokacija..." value={newReview.location} onChange={(e) => setNewReview({ ...newReview, location: e.target.value })} />
-                            <input className="modal-input" placeholder="Vrsta hrane..." value={newReview.cuisine} onChange={(e) => setNewReview({ ...newReview, cuisine: e.target.value })} />
-
-                            {/* Input za ocenu je sada type="text" da bi sakrili strelice, a tvoja logika u handleRatingChange već hendluje 1-5 */}
-                            <input
-                                className="modal-input"
-                                type="text"
-                                inputMode="numeric"
-                                placeholder="Ocena (1-5)"
-                                value={newReview.rating}
-                                onChange={handleRatingChange}
-                            />
-
-                            <textarea className="modal-input" placeholder="Komentar..." rows="4" value={newReview.comment} onChange={(e) => setNewReview({ ...newReview, comment: e.target.value })}></textarea>
-                        </div>
-
-                        <div className="modal-actions-centered">
-                            <button className="add-review-btn" onClick={handleSaveReview}>SAČUVAJ</button>
+                        <div className="modal-buttons">
+                            <button className="save-btn" onClick={handleUpdateReview}>Sačuvaj</button>
+                            <button className="cancel-btn" onClick={() => setIsEditModalOpen(false)}>Otkaži</button>
                         </div>
                     </div>
                 </div>
