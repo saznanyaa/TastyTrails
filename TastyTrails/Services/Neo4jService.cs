@@ -208,6 +208,59 @@ namespace TastyTrails.Services
             }
         }
 
+        public async Task<List<NeoRestaurantNode>> GetSimilarRestaurants(string restaurantId)
+        {
+            var session = _driver.AsyncSession();
+
+            var query = @"
+                MATCH (r:Restaurant {id: $id})
+
+                MATCH (u:User)-[rel]->(r)
+                WHERE type(rel) IN ['LIKES', 'RATED']
+
+                MATCH (u)-[rel2]->(rec:Restaurant)
+                WHERE rec.id <> $id 
+                AND type(rel2) IN ['LIKES', 'RATED']
+                AND NOT (u)-[:DISLIKES]->(rec)
+
+                WITH rec,
+                    sum(
+                        CASE
+                            WHEN type(rel2) = 'LIKES' THEN 3
+                            WHEN type(rel2) = 'RATED' THEN rel2.score
+                            ELSE 0
+                        END
+                    ) AS Score
+
+                RETURN rec.id AS Id, rec.name AS Name, Score
+                ORDER BY Score DESC
+                LIMIT 5
+            ";
+
+            try
+            {
+                var result = await session.RunAsync(query, new { id = restaurantId });
+
+                var list = new List<NeoRestaurantNode>();
+
+                await result.ForEachAsync(record =>
+                {
+                    list.Add(new NeoRestaurantNode
+                    {
+                        Id = record["Id"].As<string>(),
+                        Name = record["Name"].As<string>(),
+                        Score = record["Score"].As<int>()
+                    });
+                });
+
+                return list;
+            }
+             finally
+            {
+                await session.CloseAsync();
+            }
+        }
+
         public async Task DeleteReview(string userId, string restaurantId)
         {
             var session = _driver.AsyncSession();

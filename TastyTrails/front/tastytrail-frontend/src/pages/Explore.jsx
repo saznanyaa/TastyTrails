@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 import axios, { all } from "axios";
 import L from "leaflet";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Explore() {
     const [restaurants, setRestaurants] = useState([]);
@@ -22,6 +23,9 @@ export default function Explore() {
     const userId = localStorage.getItem("userId");
     const token = localStorage.getItem("authToken");
     const isLoggedIn = !!userId;
+    
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const defaultIcon = L.icon({
         iconUrl:"/icons/restaurant.png",
@@ -41,8 +45,8 @@ export default function Explore() {
 
         try {
             const [reviewRes, recentRes] = await Promise.all([
-                axios.get(`http://localhost:5146/api/get/restaurants/${restaurant.id}/mngReviews`),
-                axios.get(`http://localhost:5146/api/get/${restaurant.id}/reviews/recent`)
+                axios.get(`http://localhost:5146/api/get/restaurants/${selectedRestaurant.id}/mngReviews`),
+                axios.get(`http://localhost:5146/api/get/${selectedRestaurant.id}/reviews/recent`)
                 ]);
              
             
@@ -124,45 +128,54 @@ export default function Explore() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const allPromise = axios.get("http://localhost:5146/api/get/mongoRestaurants");
-                const trendingPromise = axios.get("http://localhost:5146/api/get/restaurants/trending/Beograd");
-                const savedPromise = axios.get(
-                    `http://localhost:5146/api/user/${userId}/saved`,
-                    { headers: { Authorization: `Bearer ${token}` } 
-                });
+                const [allRes, trendingRes] = await Promise.all([
+                    axios.get("http://localhost:5146/api/get/mongoRestaurants"),
+                    axios.get("http://localhost:5146/api/get/restaurants/trending/Beograd")
+                ]);
 
-                let recommendedPromise = null;
+                let recommendedData = [];
+                let savedIds = [];
 
                 if (userId && token) {
-                    recommendedPromise = axios.get(
-                        `http://localhost:5146/api/user/${userId}/recommendations/Beograd`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                }
+                    try {
+                        const [savedRes, recommendedRes] = await Promise.all([
+                            axios.get(
+                                `http://localhost:5146/api/user/${userId}/saved`,
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            ),
+                            axios.get(
+                                `http://localhost:5146/api/user/${userId}/recommendations/Beograd`,
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            )
+                        ]);
 
-                const [allRes, trendingRes, recommendedRes, savedRes] = await Promise.all([
-                    allPromise,
-                    trendingPromise,
-                    recommendedPromise,
-                    savedPromise
-                ]);
+                        savedIds = savedRes.data.map(r => r.id);
+                        recommendedData = recommendedRes.data;
+
+                    } catch (err) {
+                        console.error("Auth fetch failed:", err.response || err.message);
+                    }
+                }
 
                 const restaurantMap = new Map();
 
-                allRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "default" }));
-                trendingRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "trending" }));
+                allRes.data.forEach(r =>
+                    restaurantMap.set(r.id, { ...r, type: "default" })
+                );
 
-                if (recommendedRes) {
-                    recommendedRes.data.forEach(r =>
-                        restaurantMap.set(r.id, { ...r, type: "recommended" })
-                    );
-                    setRecommended(recommendedRes.data);
-                }
+                trendingRes.data.forEach(r =>
+                    restaurantMap.set(r.id, { ...r, type: "trending" })
+                );
+
+                recommendedData.forEach(r =>
+                    restaurantMap.set(r.id, { ...r, type: "recommended" })
+                );
 
                 setAllRestaurants(allRes.data);
                 setTrending(trendingRes.data);
+                setRecommended(recommendedData);
+                setSavedRestaurants(savedIds);
                 setRestaurants(Array.from(restaurantMap.values()));
-                setSavedRestaurants(savedRes.data.map(r => r.id));
 
             } catch (err) {
                 console.error("Error fetching restaurants:", err.response || err.message);
@@ -221,7 +234,15 @@ export default function Explore() {
                 <p style={{ margin: "5px 0" }}>
                 ⭐ {(r.averageRating ?? 0).toFixed(1)} ({r.totalReviews ?? 0})
                 </p>
-
+                <button onClick={() => navigate(`/restaurant/${r.id}`, { state: { backgroundLocation: location } })}
+                    style={{
+                        marginTop: "10px",
+                        width: "100%",
+                        cursor: "pointer"
+                    }}
+                >
+                    View details
+                </button>
                 <hr />
 
                 <p style={{ fontWeight: "bold", margin: "5px 0" }}>Recent reviews</p>

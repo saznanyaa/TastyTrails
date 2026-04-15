@@ -65,6 +65,33 @@ namespace TastyTrails.Controllers
             return Ok(result);
         }
 
+        [HttpGet("similar/{id}")]
+        public async Task<IActionResult> GetSimilarRestaurants(Guid id)
+        {
+            var similarIds = await _neo4jService.GetSimilarRestaurants(id.ToString());
+
+            var similarRestaurants = new List<MongoRestaurant>();
+
+            foreach (var simId in similarIds)
+            {
+                var restaurant = await _mongo.GetRestaurantById(Guid.Parse(simId.Id));
+                if (restaurant != null)
+                    similarRestaurants.Add(restaurant);
+            }
+
+            var result = similarRestaurants.Select(r => new
+            {
+                Id = r.Id,
+                Name = r.Name,
+                AverageRating = r.AverageRating,
+                TotalReviews = r.TotalReviews,
+                Latitude = r.Coordinates?.Lat,
+                Longitude = r.Coordinates?.Lng
+            }).ToList();
+
+            return Ok(result);
+        }
+
         [HttpGet("{id}/analytics/weekly")]
         public async Task<IActionResult> GetWeeklyAnalytics(Guid id)
         {

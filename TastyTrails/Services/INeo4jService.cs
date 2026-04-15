@@ -13,6 +13,7 @@ namespace TastyTrails.Services
         Task<List<NeoRestaurantNode>> GetRecommendations(string userId);
         Task<NeoUserNode?> GetUserByIdAsync(string id);
         Task<List<NeoRestaurantNode>> GetUserLikesAsync(string userId);
+        Task<List<NeoRestaurantNode>> GetSimilarRestaurants(string restaurantId);
 
         Task DeleteUserAsync(string userId);
         Task DeleteRestaurantAsync(string restaurantId);
