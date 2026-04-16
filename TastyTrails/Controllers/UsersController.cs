@@ -253,27 +253,7 @@ namespace TastyTrails.Controllers
             var deleted = await _mongo.DeleteReview(rId, userId);
             if(!deleted) return NotFound("Review not found!");
             return Ok(deleted);
-        }
-
-        [HttpDelete("review/delete/{id}")]
-        public async Task<IActionResult> DeleteReview(string id)
-        {
-            if (string.IsNullOrEmpty(id))
-            {
-                return BadRequest("ID recenzije je obavezan.");
-            }
-
-            bool deleted = await _mongo.DeleteReviewAsync(id);
-
-            if (deleted)
-            {
-                return Ok(new { message = "Recenzija je uspešno obrisana." });
-            }
-            else
-            {
-                return NotFound("Recenzija nije pronađena.");
-            }
-        }
+        } 
 
         [HttpGet("{id}/reviews")]
         public async Task<IActionResult> GetUserReviews(Guid id)
@@ -289,6 +269,38 @@ namespace TastyTrails.Controllers
             catch
             {
                 return NotFound();
+            }
+        }
+
+        [HttpPut("review/update")]
+        public async Task<IActionResult> UpdateReview([FromBody] System.Text.Json.JsonElement data)
+        {
+            try
+            {
+                // Izvlačenje podataka iz JsonElement-a (ne puca ako je tip pogrešan)
+                string id = data.GetProperty("id").GetString();
+
+                // Sigurno izvlačenje broja
+                int rating = 0;
+                if (data.GetProperty("rating").ValueKind == System.Text.Json.JsonValueKind.Number)
+                    rating = data.GetProperty("rating").GetInt32();
+                else if (data.GetProperty("rating").ValueKind == System.Text.Json.JsonValueKind.String)
+                    int.TryParse(data.GetProperty("rating").GetString(), out rating);
+
+                string comment = data.GetProperty("comment").GetString();
+
+                if (string.IsNullOrEmpty(id) || rating < 1 || rating > 5)
+                    return BadRequest("Podaci nisu validni.");
+
+                bool success = await _mongo.UpdateReviewAsync(id, rating, comment);
+
+                return success ? Ok() : NotFound("Recenzija nije pronađena.");
+            }
+            catch (Exception ex)
+            {
+                // Ako ovde uđe, ispisaće ti u konzoli tačno šta fali u JSON-u
+                Console.WriteLine($"Greška: {ex.Message}");
+                return StatusCode(500, "Greška pri obradi JSON-a");
             }
         }
 

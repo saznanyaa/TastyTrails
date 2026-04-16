@@ -3,6 +3,7 @@ import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 import axios, { all } from "axios";
 import L from "leaflet";
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Explore() {
     const [restaurants, setRestaurants] = useState([]);
@@ -22,6 +23,9 @@ export default function Explore() {
     const userId = localStorage.getItem("userId");
     const token = localStorage.getItem("authToken");
     const isLoggedIn = !!userId;
+    
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const defaultIcon = L.icon({
         iconUrl:"/icons/restaurant.png",
@@ -124,45 +128,54 @@ export default function Explore() {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const allPromise = axios.get("http://localhost:5146/api/get/mongoRestaurants");
-                const trendingPromise = axios.get("http://localhost:5146/api/get/restaurants/trending/Beograd");
-                const savedPromise = axios.get(
-                    `http://localhost:5146/api/user/${userId}/saved`,
-                    { headers: { Authorization: `Bearer ${token}` } 
-                });
+                const [allRes, trendingRes] = await Promise.all([
+                    axios.get("http://localhost:5146/api/get/mongoRestaurants"),
+                    axios.get("http://localhost:5146/api/get/restaurants/trending/Beograd")
+                ]);
 
-                let recommendedPromise = null;
+                let recommendedData = [];
+                let savedIds = [];
 
                 if (userId && token) {
-                    recommendedPromise = axios.get(
-                        `http://localhost:5146/api/user/${userId}/recommendations/Beograd`,
-                        { headers: { Authorization: `Bearer ${token}` } }
-                    );
-                }
+                    try {
+                        const [savedRes, recommendedRes] = await Promise.all([
+                            axios.get(
+                                `http://localhost:5146/api/user/${userId}/saved`,
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            ),
+                            axios.get(
+                                `http://localhost:5146/api/user/${userId}/recommendations/Beograd`,
+                                { headers: { Authorization: `Bearer ${token}` } }
+                            )
+                        ]);
 
-                const [allRes, trendingRes, recommendedRes, savedRes] = await Promise.all([
-                    allPromise,
-                    trendingPromise,
-                    recommendedPromise,
-                    savedPromise
-                ]);
+                        savedIds = savedRes.data.map(r => r.id);
+                        recommendedData = recommendedRes.data;
+
+                    } catch (err) {
+                        console.error("Auth fetch failed:", err.response || err.message);
+                    }
+                }
 
                 const restaurantMap = new Map();
 
-                allRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "default" }));
-                trendingRes.data.forEach(r => restaurantMap.set(r.id, { ...r, type: "trending" }));
+                allRes.data.forEach(r =>
+                    restaurantMap.set(r.id, { ...r, type: "default" })
+                );
 
-                if (recommendedRes) {
-                    recommendedRes.data.forEach(r =>
-                        restaurantMap.set(r.id, { ...r, type: "recommended" })
-                    );
-                    setRecommended(recommendedRes.data);
-                }
+                trendingRes.data.forEach(r =>
+                    restaurantMap.set(r.id, { ...r, type: "trending" })
+                );
+
+                recommendedData.forEach(r =>
+                    restaurantMap.set(r.id, { ...r, type: "recommended" })
+                );
 
                 setAllRestaurants(allRes.data);
                 setTrending(trendingRes.data);
+                setRecommended(recommendedData);
+                setSavedRestaurants(savedIds);
                 setRestaurants(Array.from(restaurantMap.values()));
-                setSavedRestaurants(savedRes.data.map(r => r.id));
 
             } catch (err) {
                 console.error("Error fetching restaurants:", err.response || err.message);
@@ -198,85 +211,139 @@ export default function Explore() {
             }}
         >
             <Popup>
-            <div style={{ position: "relative", minWidth: "200px", maxHeight: "200px", overflowY: "auto" }}>
-                <button
-                onClick={() => toggleSave(r.id)}
-                style={{
-                    position: "absolute",
-                    top: "5px",
-                    right: "5px",
-                    background: "transparent",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: "18px"
-                }}
+                <div
+                    style={{
+                    position: "relative",
+                    minWidth: "240px",
+                    maxWidth: "260px",
+                    maxHeight: "260px",
+                    overflowY: "auto",
+                    background: "white",
+                    borderRadius: "12px",
+                    boxShadow: "0 4px 15px rgba(0,0,0,0.12)",
+                    padding: "12px"
+                    }}
                 >
-                <img
-                src={isSaved(r.id) ? "/icons/bookmark (1).png" : "/icons/bookmark.png"}
-                alt="save"
-                style={{width: "20px", height: "20px"}}
-                />
-                </button>
-                <h4 style={{ margin: 0 }}>{r.name}</h4>
-                <p style={{ margin: "5px 0" }}>
-                ⭐ {(r.averageRating ?? 0).toFixed(1)} ({r.totalReviews ?? 0})
-                </p>
-
-                <hr />
-
-                <p style={{ fontWeight: "bold", margin: "5px 0" }}>Recent reviews</p>
-                <p style={{ fontStyle: "italic",fontSize: "12px", opacity: 0.8, margin: "5px 0" }}> last three days </p>
-
-                {selectedRestaurant?.id === r.id ? (
-                    recentReviews.length > 0 ? (
-                        recentReviews.map((rev, idx) => (
-                            <div key={idx} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
-                                <img
-                                    src={rev.profilePicture || "/icons/default-avatar.png"}
-                                    style={{
-                                        width: "30px",
-                                        height: "30px",
-                                        borderRadius: "50%"
-                                    }}
-                                />
-
-                                <div>
-                                    <strong>{rev.username || "User"}</strong>
-                                    <div>{rev.rating}⭐</div>
-                                    <div style={{ fontSize: "12px", opacity: 0.8 }}>
-                                        {rev.comment}
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <p>No recent reviews.</p>
-                    )
-                ) : (
-                    <p>Click marker to load recent activity...</p>
-                )}
-                {isLoggedIn && selectedRestaurant?.id === r.id && (
+                    {/* Save button */}
                     <button
-                        onClick={() => setShowReviewModal(true)}
-                        style={{
-                            position: "absolute",
-                            top: "50px",
-                            right: "5px",
-                            background: "transparent",
-                            border: "none",
-                            cursor: "pointer"
-                        }}
-                        title="Add review"
+                    onClick={() => toggleSave(r.id)}
+                    style={{
+                        position: "absolute",
+                        top: "10px",
+                        right: "10px",
+                        background: "#f5f5f5",
+                        border: "none",
+                        borderRadius: "50%",
+                        width: "32px",
+                        height: "32px",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        cursor: "pointer"
+                    }}
                     >
-                        <img
-                            src="/icons/revision.png"
-                            alt="review"
-                            style={{ width: "20px", height: "20px" }}
-                        />
+                    <img
+                        src={isSaved(r.id) ? "/icons/bookmark (1).png" : "/icons/bookmark.png"}
+                        alt="save"
+                        style={{ width: "16px", height: "16px" }}
+                    />
                     </button>
-                )}
+
+                    {/* Header */}
+                    <div style={{ marginBottom: "8px" }}>
+                    <h4 style={{ margin: 0, fontSize: "16px" }}>{r.name}</h4>
+                    <p style={{ margin: "4px 0", fontSize: "13px", color: "#666" }}>
+                        ⭐ {(r.averageRating ?? 0).toFixed(1)} ({r.totalReviews ?? 0})
+                    </p>
+                    </div>
+
+                    {/* View details button */}
+                    <div
+                    onClick={() =>
+                        navigate(`/restaurant/${r.id}`, {
+                        state: { backgroundLocation: location }
+                        })
+                    }
+                    style={{
+                        fontSize: "13px",
+                        color: "#007bff",
+                        cursor: "pointer",
+                        marginBottom: "10px"
+                    }}
+                    >
+                    View details →
+                    </div>
+
+                    {/* Divider */}
+                    <div style={{ height: "1px", background: "#eee", margin: "8px 0" }} />
+
+                    {/* Reviews header */}
+                    <p style={{ fontWeight: "600", margin: 0, fontSize: "13px" }}>
+                    Recent reviews
+                    </p>
+                    <p style={{ fontSize: "11px", color: "#888", marginBottom: "8px" }}>
+                    last three days
+                    </p>
+
+                    {/* Reviews */}
+                    {selectedRestaurant?.id === r.id ? (
+      <>
+        {recentReviews.length > 0 ? (
+          recentReviews.map((rev, idx) => (
+            <div
+              key={idx}
+              style={{
+                display: "flex",
+                gap: "8px",
+                marginBottom: "8px"
+              }}
+            >
+              <img
+                src={rev.profilePicture || "/icons/default-avatar.png"}
+                style={{
+                  width: "28px",
+                  height: "28px",
+                  borderRadius: "50%"
+                }}
+              />
+
+              <div style={{ fontSize: "12px" }}>
+                <strong>{rev.username || "User"}</strong>
+                <div style={{ color: "#ff7a00" }}>{rev.rating}⭐</div>
+                <div style={{ color: "#666" }}>{rev.comment}</div>
+              </div>
             </div>
-            </Popup>
+          ))
+        ) : (
+          <p style={{ fontSize: "12px", color: "#888" }}>
+            No recent reviews.
+          </p>
+        )}
+
+        {isLoggedIn && (
+          <div
+            onClick={() => setShowReviewModal(true)}
+            style={{
+              marginTop: "6px",
+              padding: "6px",
+              borderRadius: "8px",
+              background: "#f5f5f5",
+              textAlign: "center",
+              fontSize: "12px",
+              cursor: "pointer"
+            }}
+          >
+            ✍️ Write a review
+          </div>
+        )}
+      </>
+    ) : (
+      <p style={{ fontSize: "12px", color: "#888" }}>
+        Click marker to load activity...
+      </p>
+    )}
+                </div>
+                </Popup>
         </Marker>
         ))}
 

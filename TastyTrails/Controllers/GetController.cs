@@ -65,6 +65,33 @@ namespace TastyTrails.Controllers
             return Ok(result);
         }
 
+        [HttpGet("similar/{id}")]
+        public async Task<IActionResult> GetSimilarRestaurants(Guid id)
+        {
+            var similarIds = await _neo4jService.GetSimilarRestaurants(id.ToString());
+
+            var similarRestaurants = new List<MongoRestaurant>();
+
+            foreach (var simId in similarIds)
+            {
+                var restaurant = await _mongo.GetRestaurantById(Guid.Parse(simId.Id));
+                if (restaurant != null)
+                    similarRestaurants.Add(restaurant);
+            }
+
+            var result = similarRestaurants.Select(r => new
+            {
+                Id = r.Id,
+                Name = r.Name,
+                AverageRating = r.AverageRating,
+                TotalReviews = r.TotalReviews,
+                Latitude = r.Coordinates?.Lat,
+                Longitude = r.Coordinates?.Lng
+            }).ToList();
+
+            return Ok(result);
+        }
+
         [HttpGet("{id}/analytics/weekly")]
         public async Task<IActionResult> GetWeeklyAnalytics(Guid id)
         {
@@ -118,6 +145,9 @@ namespace TastyTrails.Controllers
             {
                 var mongoReview = await _mongo.GetReviewByRestAndUser(r.RestaurantId, r.UserId);
 
+                if(mongoReview == null)
+                    continue;
+
                 var mongoUser = await _mongo.GetUserById(r.UserId);
 
                 result.Add(new
@@ -125,7 +155,7 @@ namespace TastyTrails.Controllers
                     UserId = r.UserId,
                     Username = mongoUser?.Username ?? "Nepoznato",
                     ProfilePicture = mongoUser?.ProfileImage ?? "Nema slike",
-                    Rating = mongoReview?.Rating ?? 0,
+                    Rating = mongoReview.Rating,
                     Comment = mongoReview?.Comment ?? "Nema komentara",
                     ReviewedAt = r.ReviewedAt
                 });

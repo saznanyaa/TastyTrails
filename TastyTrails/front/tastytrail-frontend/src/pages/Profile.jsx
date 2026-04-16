@@ -192,7 +192,7 @@ export default function Profile() {
 
         const authToken = localStorage.getItem("authToken");
         try {
-            const res = await fetch(`http://localhost:5146/api/user/review/delete/${reviewId}`, {
+            const res = await fetch(`http://localhost:5146/api/user/${userId}/review/${reviewId}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': `Bearer ${authToken}` }
             });
@@ -235,6 +235,9 @@ export default function Profile() {
             console.error("Greška pri ažuriranju:", err);
         }
     };
+
+    console.log("User data:", user);
+    console.log("Reviews data:", reviews);
 
     if (loading) return <div className="profile-page"><h2>Učitavanje...</h2></div>;
 
@@ -359,7 +362,7 @@ export default function Profile() {
 
                             <div className="review-rating">⭐ {rev.rating}</div>
                             <h4>{rev.name || rev.restaurantName}</h4>
-                            <p className="review-cuisine">{rev.cuisine || 'VRSTA HRANE NIJE NAVEDENA'}</p>
+                            <p className="review-cuisine">{rev.restaurantName || 'VRSTA HRANE NIJE NAVEDENA'}</p>
                             <p className="review-comment">{rev.comment}</p>
                         </div>
                     ))}
