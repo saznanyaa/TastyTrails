@@ -122,6 +122,7 @@ namespace TastyTrails.Services
                 restaurant.AverageRating = ((restaurant.AverageRating * restaurant.TotalReviews) - oldRating + rating) / restaurant.TotalReviews;
 
                 if(restaurant.AverageRating > 2.5) restaurant.TrendingScore += 10;
+                else restaurant.TrendingScore -= 10;
 
                 await UpdateRestaurant(restaurant);
 
@@ -149,11 +150,58 @@ namespace TastyTrails.Services
                 restaurant.AverageRating = ((restaurant.AverageRating * (restaurant.TotalReviews - 1)) + rating) / restaurant.TotalReviews;
 
                 if(restaurant.AverageRating > 2.5) restaurant.TrendingScore += 10;
+                else restaurant.TrendingScore -= 10;
 
                 await UpdateRestaurant(restaurant);
 
                 return review;
             }
+        }
+
+        public async Task UpdateReview(Guid userId, Guid restaurantId, UpdateReviewDTO dto)
+        {
+            var filter = Builders<MongoReview>.Filter.And(
+                Builders<MongoReview>.Filter.Eq(r => r.UserId, userId),
+                Builders<MongoReview>.Filter.Eq(r => r.RestaurantId, restaurantId)
+            );
+
+            var existingReview = await Reviews.Find(filter).FirstOrDefaultAsync();
+            if (existingReview == null) throw new Exception("Review not found");
+
+            var updates = new List<UpdateDefinition<MongoReview>>();
+
+            bool ratingChanged = dto.Rating.HasValue && dto.Rating.Value != existingReview.Rating;
+
+            if(dto.Rating.HasValue)
+            {
+                updates.Add(Builders<MongoReview>.Update.Set(r => r.Rating, dto.Rating.Value));
+            }
+
+            if(dto.Comment != null)
+            {
+                updates.Add(Builders<MongoReview>.Update.Set(r => r.Comment, dto.Comment));
+            }
+
+            updates.Add(Builders<MongoReview>.Update.Set(r => r.UpdatedAt, DateTime.UtcNow));
+
+            var updated = Builders<MongoReview>.Update.Combine(updates);
+
+            if(ratingChanged)
+            {
+                var restaurant = await GetRestaurantById(restaurantId);
+                if (restaurant == null) throw new Exception("Restaurant not found");
+
+                restaurant.AverageRating = ((restaurant.AverageRating * restaurant.TotalReviews) - existingReview.Rating + dto.Rating.Value) / restaurant.TotalReviews;
+
+                if(restaurant.AverageRating > 2.5 && existingReview.Rating <= 2.5) restaurant.TrendingScore += 10;
+                else if(restaurant.AverageRating <= 2.5 && existingReview.Rating > 2.5) restaurant.TrendingScore -= 10;
+
+                await UpdateRestaurant(restaurant);
+            }
+
+            var result = await Reviews.UpdateOneAsync(filter, updated);
+
+            if(result.MatchedCount == 0) throw new Exception("Review not found");
         }
 
         public async Task UpdateRestaurant(MongoRestaurant restaurant)

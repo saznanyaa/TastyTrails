@@ -35,6 +35,101 @@ export default function Profile() {
         navigate(`/profile/${targetUserId}`);
     };
 
+    const handleFollowToggle = async () => {
+        const authToken = localStorage.getItem("authToken");
+        if (!authToken) {
+            alert("Morate biti ulogovani.");
+            return;
+        }
+
+        // Određujemo metodu na osnovu akcije
+        const method = isFollowing ? 'DELETE' : 'POST';
+        const endpoint = isFollowing ? 'unfollow' : 'follow';
+        const url = `http://localhost:5146/api/user/${endpoint}/${id}`;
+
+        try {
+            const res = await fetch(url, {
+                method: method, // OVO JE KLJUČNA IZMENA
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (res.ok) {
+                setIsFollowing(!isFollowing);
+                setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
+            } else {
+                const errorData = await res.json();
+                console.error("Server error:", errorData);
+            }
+        } catch (err) {
+            console.error("Mrežna greška:", err);
+        }
+    };
+
+    const openFollowModal = async (type) => {
+        setModalTitle(type === "followers" ? "Followers" : "Following");
+        setShowFollowModal(true);
+        setModalUsers([]);
+        setIsModalLoading(true);
+        try {
+            const token = localStorage.getItem('authToken');
+            const res = await fetch(`http://localhost:5146/api/user/relations/${id}/${type}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setModalUsers(data);
+            }
+        } catch (err) { console.error(err); } finally { setIsModalLoading(false); }
+    };
+
+    const handleDelete = async (reviewId) => {
+        if (!window.confirm("Da li ste sigurni?")) return;
+        const authToken = localStorage.getItem("authToken");
+        try {
+            const res = await fetch(`http://localhost:5146/api/user/${loggedInUserId}/review/${reviewId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${authToken}` }
+            });
+            if (res.ok) setReviews(prev => prev.filter(r => (r.id || r.Id) !== reviewId));
+        } catch (err) { console.error(err); }
+    };
+
+    const openEditModal = (review) => {
+        setCurrentReview({ 
+            id: review.id || review.Id,
+            rating: review.rating,
+            comment: review.comment,
+            restaurantId: review.restaurantId || review.RestaurantId
+         });
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdateReview = async () => {
+        const authToken = localStorage.getItem("authToken");
+        const loggedInUserId = localStorage.getItem("userId");
+        try {
+            const res = await fetch(`http://localhost:5146/api/user/update/${loggedInUserId}/review/${currentReview.restaurantId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(currentReview)
+            });
+            if (res.ok) {
+                setReviews(prev => prev.map(r =>
+                    (r.id || r.Id) === currentReview.id
+                        ? { ...r, rating: currentReview.rating, comment: currentReview.comment }
+                        : r
+                ));
+                setIsEditModalOpen(false);
+            }
+        } catch (err) { console.error(err); }
+    };
+
     // 1. Fetch Podataka - FIX: Sada resetuje state pre svakog novog učitavanja
     useEffect(() => {
         const fetchData = async () => {
@@ -131,90 +226,8 @@ export default function Profile() {
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm]);
 
-    const handleFollowToggle = async () => {
-        const authToken = localStorage.getItem("authToken");
-        if (!authToken) {
-            alert("Morate biti ulogovani.");
-            return;
-        }
-
-        // Određujemo metodu na osnovu akcije
-        const method = isFollowing ? 'DELETE' : 'POST';
-        const endpoint = isFollowing ? 'unfollow' : 'follow';
-        const url = `http://localhost:5146/api/user/${endpoint}/${id}`;
-
-        try {
-            const res = await fetch(url, {
-                method: method, // OVO JE KLJUČNA IZMENA
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (res.ok) {
-                setIsFollowing(!isFollowing);
-                setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
-            } else {
-                const errorData = await res.json();
-                console.error("Server error:", errorData);
-            }
-        } catch (err) {
-            console.error("Mrežna greška:", err);
-        }
-    };
-
-    const openFollowModal = async (type) => {
-        setModalTitle(type === "followers" ? "Followers" : "Following");
-        setShowFollowModal(true);
-        setModalUsers([]);
-        setIsModalLoading(true);
-        try {
-            const token = localStorage.getItem('authToken');
-            const res = await fetch(`http://localhost:5146/api/user/relations/${id}/${type}`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-                const data = await res.json();
-                setModalUsers(data);
-            }
-        } catch (err) { console.error(err); } finally { setIsModalLoading(false); }
-    };
-
-    const handleDelete = async (reviewId) => {
-        if (!window.confirm("Da li ste sigurni?")) return;
-        const authToken = localStorage.getItem("authToken");
-        try {
-            const res = await fetch(`http://localhost:5146/api/user/${loggedInUserId}/review/${reviewId}`, {
-                method: 'DELETE',
-                headers: { 'Authorization': `Bearer ${authToken}` }
-            });
-            if (res.ok) setReviews(prev => prev.filter(r => (r.id || r.Id) !== reviewId));
-        } catch (err) { console.error(err); }
-    };
-
-    const openEditModal = (review) => {
-        setCurrentReview({ ...review });
-        setIsEditModalOpen(true);
-    };
-
-    const handleUpdateReview = async () => {
-        const authToken = localStorage.getItem("authToken");
-        try {
-            const res = await fetch(`http://localhost:5146/api/user/review/update`, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(currentReview)
-            });
-            if (res.ok) {
-                setReviews(prev => prev.map(r => (r.id || r.Id) === (currentReview.id || currentReview.Id) ? currentReview : r));
-                setIsEditModalOpen(false);
-            }
-        } catch (err) { console.error(err); }
-    };
+    console.log("USER DATA:", user);
+    console.log("REVIEWS DATA:", reviews);
 
     if (loading) return <div className="profile-page"><h2>Učitavanje...</h2></div>;
 
@@ -282,6 +295,26 @@ export default function Profile() {
                 </div>
             </div>
 
+             {/* SAČUVANI RESTORANI SEKCIJA */}
+            <div className="content-section">
+                <div className="horizontal-divider"></div>
+                <h3 className="section-title">SAČUVANI RESTORANI</h3>
+                <div className="reviews-grid">
+                    {savedRestaurants.length > 0 ? (
+                        savedRestaurants.map((rest) => (
+                            <div
+                                key={rest.id || rest.Id}
+                                className="review-card saved-card clickable-card"
+                                onClick={() => navigate(`/restaurant/${rest.id || rest.Id}`)}
+                            >
+                                <h4>{rest.name}</h4>
+                                <p className="review-cuisine">{rest.cuisine || 'Nije navedeno'}</p>
+                            </div>
+                        ))
+                    ) : <p style={{ color: 'gray' }}>Nema sačuvanih restorana.</p>}
+                </div>
+            </div>
+
             {/* RECENZIJE SEKCIJA */}
             <div className="content-section">
                 <div className="horizontal-divider"></div>
@@ -305,32 +338,13 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* SAČUVANI RESTORANI SEKCIJA */}
-            <div className="content-section">
-                <div className="horizontal-divider"></div>
-                <h3 className="section-title">SAČUVANI RESTORANI</h3>
-                <div className="reviews-grid">
-                    {savedRestaurants.length > 0 ? (
-                        savedRestaurants.map((rest) => (
-                            <div key={rest.id || rest.Id} className="review-card saved-card">
-                                <h4>{rest.name}</h4>
-                                <p className="review-cuisine">{rest.cuisine || 'Nije navedeno'}</p>
-                                <button className="view-profile-btn" onClick={() => navigate(`/explore`)}>
-                                    Pogledaj
-                                </button>
-                            </div>
-                        ))
-                    ) : <p style={{ color: 'gray' }}>Nema sačuvanih restorana.</p>}
-                </div>
-            </div>
-
             {/* MODALI */}
             {isEditModalOpen && (
                 <div className="modal-overlay">
                     <div className="edit-modal">
                         <h3>Izmeni recenziju</h3>
                         <label>Ocena:</label>
-                        <input type="number" min="1" max="5" value={currentReview.rating} onChange={(e) => setCurrentReview({ ...currentReview, rating: e.target.value })} />
+                        <input type="number" min="1" max="5" value={currentReview.rating} onChange={(e) => setCurrentReview({ ...currentReview, rating: Number(e.target.value) })} />
                         <label>Komentar:</label>
                         <textarea value={currentReview.comment} onChange={(e) => setCurrentReview({ ...currentReview, comment: e.target.value })} />
                         <div className="modal-buttons">

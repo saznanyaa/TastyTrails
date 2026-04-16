@@ -272,38 +272,26 @@ namespace TastyTrails.Controllers
             }
         }
 
-        [HttpPut("review/update")]
-        public async Task<IActionResult> UpdateReview([FromBody] System.Text.Json.JsonElement data)
+        [HttpPut("update/{userId}/review/{restaurantId}")]
+        public async Task<IActionResult> UpdateReview(Guid userId, Guid restaurantId, [FromBody] UpdateReviewDTO dto)
         {
-            try
+            var userIdFromToken = GetUserIdFromToken();
+            if (userIdFromToken != userId) return Forbid();
+
+            if(dto.Rating.HasValue)
             {
-                // Izvlačenje podataka iz JsonElement-a (ne puca ako je tip pogrešan)
-                string id = data.GetProperty("id").GetString();
-
-                // Sigurno izvlačenje broja
-                int rating = 0;
-                if (data.GetProperty("rating").ValueKind == System.Text.Json.JsonValueKind.Number)
-                    rating = data.GetProperty("rating").GetInt32();
-                else if (data.GetProperty("rating").ValueKind == System.Text.Json.JsonValueKind.String)
-                    int.TryParse(data.GetProperty("rating").GetString(), out rating);
-
-                string comment = data.GetProperty("comment").GetString();
-
-                if (string.IsNullOrEmpty(id) || rating < 1 || rating > 5)
-                    return BadRequest("Podaci nisu validni.");
-
-                bool success = await _mongo.UpdateReviewAsync(id, rating, comment);
-
-                return success ? Ok() : NotFound("Recenzija nije pronađena.");
+                if(dto.Rating.Value < 1 || dto.Rating.Value > 5)
+                    return BadRequest("Rating must be between 1 and 5.");
+                
+                await _cassandra.EditRestaurantRating(restaurantId, userId, dto.Rating.Value);
+                await _neo4jService.UpdateReview(userId.ToString(), restaurantId.ToString(), dto.Rating.Value);
             }
-            catch (Exception ex)
-            {
-                // Ako ovde uđe, ispisaće ti u konzoli tačno šta fali u JSON-u
-                Console.WriteLine($"Greška: {ex.Message}");
-                return StatusCode(500, "Greška pri obradi JSON-a");
-            }
+
+            await _mongo.UpdateReview(userId, restaurantId, dto);
+
+            return Ok("Review updated successfully!");
         }
-
+        
 //---recommendations--------------------------------------------------------------------------------
         [HttpGet("{id}/recommendations/{city}")]
         public async Task<IActionResult> GetRecommendations(Guid id, string city)

@@ -107,6 +107,48 @@ namespace TastyTrails.Services
                 await session.CloseAsync();
             }
         }
+
+        public async Task UpdateReview(string userId, string restaurantId, int rating)
+        {
+            var session = _driver.AsyncSession();
+
+            try
+            {
+                await session.ExecuteWriteAsync(async tx =>
+                {
+                    await tx.RunAsync(@"
+                        MATCH (u:User {id: $userId})-[r:RATED]->(res:Restaurant {id: $restaurantId})
+                        SET r.score = $rating
+
+                        // Remove old preference relationships
+                        OPTIONAL MATCH (u)-[l:LIKES]->(res)
+                        DELETE l
+
+                        OPTIONAL MATCH (u)-[d:DISLIKES]->(res)
+                        DELETE d
+                    ", new
+                    {
+                        userId,
+                        restaurantId,
+                        rating
+                    });
+                });
+
+                if (rating >= 3)
+                {
+                    await ConnectUserToRestaurantAsync(userId, restaurantId, "LIKES");
+                }
+                else
+                {
+                    await ConnectUserToRestaurantAsync(userId, restaurantId, "DISLIKES");
+                }
+            }
+            finally
+            {
+                await session.CloseAsync();
+            }
+        }
+        
         public async Task FollowUserAsync(string followerId, string followedId)
         {
             var session = _driver.AsyncSession();
