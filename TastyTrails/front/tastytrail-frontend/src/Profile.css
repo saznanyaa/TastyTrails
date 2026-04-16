@@ -1,20 +1,25 @@
-﻿.profile-page {
-    background-color: #000;
-    color: #fff;
-    min-height: 100vh;
-    padding: 100px 50px;
-    font-family: sans-serif;
+﻿/* GLAVNI KONTEJNER - Prelazimo na svetlo sivu pozadinu */
+.profile-page {
+    background-color: #fafafa; /* Off-white pozadina */
+    color: #262626; /* Tamno siva za bolju čitljivost */
+    min-height: 100vh; /* Promenjeno sa 190vh na min-height zbog skrolovanja */
+    padding: 60px 5% 100px 5%;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
 .top-section-container {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    width: 100%;
+    align-items: center;
+    width: 95%;
     margin-bottom: 60px;
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* LEVO */
+/* LEVO - Profilna slika */
 .left-info-box {
     flex: 1;
     display: flex;
@@ -26,430 +31,327 @@
     width: 150px;
     height: 150px;
     border-radius: 50%;
-    background-color: #111;
+    background-color: #f0f0f0;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     overflow: hidden;
-    border: 1px solid #222;
+    border: 2px solid #efefef; /* Svetliji okvir */
+    transition: transform 0.2s;
 }
 
-.user-text-container {
-    text-align: center;
-    margin-top: 15px;
-}
+    .avatar-circle:hover {
+        transform: scale(1.02);
+    }
 
 .username-text {
-    font-size: 20px;
-    letter-spacing: 2px;
-}
-
-/* CENTAR */
-.center-stats-box {
-    flex: 1;
-    display: flex;
-    gap: 40px;
-    justify-content: center;
-    padding-top: 40px;
-}
-
-.stat-item {
-    text-align: center;
-}
-
-.stat-number {
-    display: block;
     font-size: 24px;
+    font-weight: 300;
+    letter-spacing: 0.5px;
+    color: #262626;
 }
 
-.stat-label {
-    font-size: 10px;
-    color: #555;
-    letter-spacing: 1px;
-}
-
-/* DESNO (Tvoj crveni kvadrat) */
-.right-search-area {
+/* CENTAR - Statistika */
+.center-stats-box {
     flex: 1;
     display: flex;
-    justify-content: flex-end;
-}
-
-.search-wrapper {
-    position: relative;
-    width: 220px;
-    margin-right: 60px;
-    margin-top: -50px;
-}
-
-.profile-search-input {
-    width: 100%;
-    padding: 10px 15px;
-    background: #0a0a0a;
-    border: 1px solid #222;
-    border-radius: 4px;
-    color: white;
-    font-size: 13px;
-    outline: none;
-}
-
-.profile-search-input:focus {
-     border-color: #444;
-}
-
-.search-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    width: 100%;
-    background: #111;
-    border: 1px solid #222;
-    z-index: 10;
-}
-
-.search-item {
-    padding: 10px;
-    cursor: pointer;
-    border-bottom: 1px solid #1a1a1a;
-    font-size: 13px;
-}
-
-    .search-item:hover {
-        background: #1a1a1a;
-    }
-
-/* DONJI DEO */
-.content-section {
-    width: 100%;
-    text-align: center;
-}
-
-.horizontal-divider {
-    height: 1px;
-    background-color: #111;
-    margin-bottom: 40px;
-}
-
-.section-title {
-    letter-spacing: 3px;
-    color: #444;
-    font-size: 14px;
-    margin-bottom: 20px;
-}
-
-.reviews-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: 20px;
-    margin-top: 30px;
-}
-
-.review-card {
-    background: #050505;
-    border: 1px solid #111;
-    padding: 20px;
-    text-align: left;
-    border-radius: 4px;
-}
-
-.review-cuisine {
-    color: #444;
-    font-size: 11px;
-    margin: 5px 0;
-}
-
-.review-rating {
-    color: #ffd700;
-    margin-bottom: 10px;
-}
-
-/* Zadrži svoj postojeći .add-review-btn */
-.add-review-btn {
-    background: none;
-    border: 1px solid #fff;
-    color: #fff;
-    padding: 10px 25px;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all 0.2s; /* Dodajemo za lepši prelaz */
-}
-
-/* NOVO: Prošireno dugme specifično za Modal */
-.modal-actions-centered .add-review-btn {
-    width: 40%; /* Širi se celom dužinom modala */
-    padding: 12px 0; /* Povećavamo visinu (sa 10px na 15px) */
-    font-size: 14px; /* Malo krupniji tekst */
-    letter-spacing: 2px; /* Razmak slova da prati stil naslova */
-    margin-top: 10px; /* Razmak od poslednjeg polja */
-    text-transform: uppercase;
-}
-
-/* Hover efekat da ostane isti ili ga pojačaj */
-.add-review-btn:hover {
-    background: #fff;
-    color: #000;
-}
-
-    .add-review-btn:hover {
-        background: #fff;
-        color: #000;
-    }
-
-/* MODAL */
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.9);
-    display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    z-index: 2000;
-}
-
-.save-btn {
-    width: 100%;
-    padding: 10px;
-    background: #fff;
-    color: #000;
-    border: none;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-/* Kontejner za modal */
-.modal-content {
-    background: #0a0a0a;
-    border: 1px solid #111;
-    padding: 50px 40px 40px 40px; /* Malo više mesta gore zbog X dugmeta */
-    width: 90%;
-    max-width: 450px;
-    position: relative; /* Neophodno za apsolutno pozicioniranje X-a */
-    border-radius: 2px;
-    display: flex;
-    flex-direction: column;
-}
-
-/* X dugme u gornjem desnom ćošku */
-.close-modal {
-    position: absolute;
-    top: 15px;
-    right: 20px;
-    background: none;
-    border: none;
-    color: #fff;
-    font-size: 28px;
-    font-weight: 200; /* Tanji izgled */
-    cursor: pointer;
-    padding: 0;
-    line-height: 1;
-    transition: color 0.2s;
-}
-
-    .close-modal:hover {
-        color: #444;
-    }
-
-/* Naslov u modalu */
-.modal-content .section-title {
-    margin-bottom: 30px;
-    text-align: center;
-    width: 100%;
-    color: #999;
-}
-
-/* Poravnanje svih inputa */
-.modal-inputs-container {
-    display: flex;
-    flex-direction: column;
-    gap: 15px; /* Razmak između polja */
-}
-
-.modal-input {
-    width: 100%;
-    background: #000;
-    border: 1px solid #222;
-    color: #fff;
-    padding: 12px;
-    font-size: 13px;
-    outline: none;
-    box-sizing: border-box;
-}
-
-/* Centriranje donjeg dugmeta */
-.modal-actions-centered {
-    display: flex;
-    justify-content: center; /* Centriranje u redu */
-    margin-top: 30px;
-    width: 100%;
-}
-
-/* Osiguravamo da nema strelica ako slučajno ostane type="number" */
-.modal-input::-webkit-outer-spin-button,
-.modal-input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
-}
-
-.center-stats-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Centrira brojeve i dugme po horizontali */
-    justify-content: center;
-    gap: 15px; /* Razmak između brojeva i dugmeta */
+    gap: 20px;
 }
 
 .stats-row {
     display: flex;
-    gap: 40px; /* Razmak između Followers, Following, Recenzije */
+    gap: 40px;
 }
 
-.follow-action-btn {
-    background-color: black;
-    color: white;
-    border: 1px solid white;
-    padding: 10px 30px;
-    font-weight: bold;
+.stat-item {
+    text-align: center;
     cursor: pointer;
-    border-radius: 4px;
-    letter-spacing: 1px;
-    font-size: 13px;
-    transition: background-color 0.3s ease, color 0.3s ease; /* Glatka promena boje */
-    margin-top: 30px;
 }
 
-    /* EFEKAT KAO KOD LOGIN/LOGOUT DUGMETA */
-    .follow-action-btn:hover {
-        background-color: white;
-        color: black;
-    }
+.stat-number {
+    display: block;
+    font-size: 20px;
+    font-weight: 600;
+    color: #262626;
+}
 
-    .follow-action-btn:active {
-        transform: scale(0.98);
-    }
+.stat-label {
+    font-size: 14px;
+    color: #8e8e8e; /* Svetliji tekst za labelu */
+}
 
-/* Kontejner za karticu */
-.review-card {
+/* DESNO - Search */
+.right-search-area {
+    flex: 1;
     display: flex;
-    flex-direction: column;
-    padding: 20px;
-    padding-bottom: 60px; /* Dodajemo prostor na dnu da admin box ne prekriva tekst */
+    justify-content: flex-end;
+    margin-right: 40px;
+}
+
+.search-wrapper {
     position: relative;
-    border: 1px solid #eee;
+    width: 200px;
+}
+
+.profile-search-input {
+    width: 100%;
+    padding: 10px 15px 10px 35px; /* Prostor za ikonicu ako je dodaš */
+    background: #efefef;
+    border: none;
+    border-radius: 8px;
+    color: #262626;
+    font-size: 14px;
+    outline: none;
+}
+
+    .profile-search-input:focus {
+        background: #e2e2e2;
+    }
+
+.search-dropdown {
+    position: absolute;
+    top: 110%;
+    right: 0;
+    width: 100%;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 10;
+    border: 1px solid #efefef;
+}
+
+.search-item {
+    padding: 12px;
+    color: #262626;
+    border-bottom: 1px solid #fafafa;
+}
+
+    .search-item:hover {
+        background: #fafafa;
+    }
+
+/* DUGME FOLLOW */
+.follow-action-btn {
+    background-color: #0095f6; /* Plava boja za akciju */
+    color: white;
+    border: none;
+    padding: 8px 24px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: background-color 0.2s;
+    margin-top: 10px;
+}
+
+    .follow-action-btn:hover {
+        background-color: #1877f2;
+        color: white;
+    }
+
+/* DONJI DEO - Kartice */
+.content-section {
+    width: 100%;
+}
+
+.horizontal-divider {
+    height: 1px;
+    background-color: #dbdbdb;
+    margin-bottom: 40px;
+}
+
+.section-title {
+    letter-spacing: 1px;
+    color: #8e8e8e;
+    font-size: 14px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+}
+
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 30px;
+    padding-bottom: 50px;
+}
+
+/* ZAJEDNIČKI STIL ZA KARTICE */
+.review-card, .saved-card {
+    background: white;
+    border: 1px solid #dbdbdb;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+    .review-card:hover, .saved-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    }
+
+.review-cuisine {
+    color: #8e8e8e;
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+/* SPECIFIKACIJA ZA SAČUVANE */
+.saved-card {
+    border-left: 6px solid #ffcc00; /* Zadržavamo žutu crtu kao akcenat */
+}
+
+    .saved-card button {
+        background: #0095f6;
+        color: white;
+        border-radius: 6px;
+        font-weight: 600;
+        border: none;
+        padding: 10px;
+        margin-top: 20px;
+    }
+
+/* ADMIN BOX UNUTAR KARTICE */
+.review-admin-actions-center {
+    background-color: #f8f9fa;
+    border: 1px solid #efefef;
+    border-radius: 12px;
+    margin-top: 15px;
+}
+
+.action-text-btn {
+    color: #8e8e8e;
+}
+
+    .action-text-btn:hover {
+        color: #000;
+    }
+
+/* MODAL - Svetao i moderan */
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.4); /* Nešto providniji overlay */
+}
+
+.modal-content, .modal-container {
+    background: white;
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid #dbdbdb;
+    padding: 15px;
+}
+
+    .modal-header h3 {
+        color: #262626;
+    }
+
+.modal-input {
+    background: #fafafa;
+    border: 1px solid #dbdbdb;
+    color: #262626;
     border-radius: 8px;
 }
 
-/* Centrirani admin box na dnu */
+    .modal-input:focus {
+        border-color: #a8a8a8;
+    }
+
+.add-review-btn {
+    background: #262626;
+    border: none;
+    color: #fff;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+    .add-review-btn:hover {
+        background: #444;
+        color: #fff;
+    }
+
+.modal-username {
+    color: #262626;
+    font-weight: 600;
+}
+
+.view-profile-btn {
+    background: #efefef;
+    color: #262626;
+}
+
+    .view-profile-btn:hover {
+        background: #dbdbdb;
+    }
+
+/* Popravka onog belog na dnu o kojem si pričao */
+body {
+    margin: 0;
+    background-color: #fafafa; /* Cela stranica mora imati istu boju pozadine */
+}
+
+/* Kontejner za akcije ostaje isti, samo mu skidamo fiksnu pozadinu ako ti smeta */
 .review-admin-actions-center {
     position: absolute;
     bottom: 15px;
     left: 50%;
-    transform: translateX(-50%); /* Centriranje horizontalno */
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 6px 15px;
-    background-color: #f9f9f9; /* Blaga pozadina box-a */
-    border: 1px solid #eee;
-    border-radius: 20px; /* Zaobljeni izgled box-a */
-    font-size: 12px;
+    gap: 8px; /* Malo manji razmak za kompaktniji izgled */
+    padding: 4px 12px;
+    background-color: #ffffff; /* Čisto bela pozadina */
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05); /* Suptilna senka da "odskoči" od kartice */
 }
 
+/* Osnovni stil za oba dugmeta */
 .action-text-btn {
     background: none;
     border: none;
-    padding: 0;
+    padding: 6px 12px;
     cursor: pointer;
     font-family: inherit;
-    font-size: inherit;
+    font-size: 11px; /* Smanjujemo font za elegantniji izgled */
     text-transform: uppercase;
-    font-weight: 700;
-    transition: color 0.2s;
-    letter-spacing: 0.5px;
+    font-weight: 600;
+    letter-spacing: 0.8px;
+    border-radius: 15px; /* Zaobljene ivice za svako dugme posebno */
+    transition: all 0.2s ease;
 }
 
+/* EDIT DUGME - Suptilno plavo */
 .edit-link {
-    color: #666;
+    color: #007bff;
+    background-color: #f0f7ff; /* Veoma svetlo plava pozadina */
 }
 
     .edit-link:hover {
-        color: #000;
+        background-color: #007bff;
+        color: #ffffff;
+        transform: translateY(-1px);
     }
 
+/* DELETE DUGME - Suptilno crveno */
 .delete-link {
-    color: #666;
+    color: #dc3545;
+    background-color: #fff5f5; /* Veoma svetlo crvena pozadina */
 }
 
     .delete-link:hover {
-        color: #000;
+        background-color: #dc3545;
+        color: #ffffff;
+        transform: translateY(-1px);
     }
 
+/* Sklanjamo separator jer nam više ne treba pored ovakvih dugmadi */
 .action-separator {
-    color: #ddd;
-    font-weight: normal;
-    user-select: none;
-}
-
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5); /* Zatamnjena pozadina */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-}
-
-.edit-modal {
-    background: white;
-    padding: 30px;
-    border-radius: 12px;
-    width: 400px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-}
-
-    .edit-modal input, .edit-modal textarea {
-        padding: 10px;
-        border: 1px solid #ddd;
-        border-radius: 6px;
-        font-family: inherit;
-    }
-
-    .edit-modal textarea {
-        height: 100px;
-        resize: none;
-    }
-
-.modal-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    margin-top: 10px;
-}
-
-.save-btn {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.cancel-btn {
-    background-color: #6c757d;
-    color: white;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 4px;
-    cursor: pointer;
+    display: none;
 }

@@ -382,5 +382,23 @@ namespace TastyTrails.Controllers
                 return StatusCode(500, "Greška pri obradi JSON-a");
             }
         }
+
+        [HttpGet("relations/{userId}/{type}")]
+        public async Task<IActionResult> GetRelations(Guid userId, string type)
+        {
+            // Validacija tipa (opciono, ali dobra praksa)
+            if (type.ToLower() != "followers" && type.ToLower() != "following")
+                return BadRequest("Tip mora biti 'followers' ili 'following'.");
+
+            try
+            {
+                var result = await _mongo.GetFollowDetailsAsync(userId, type);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Greška na serveru: {ex.Message}");
+            }
+        }
     }
 }

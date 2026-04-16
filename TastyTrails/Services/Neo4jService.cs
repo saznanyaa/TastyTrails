@@ -52,13 +52,15 @@ namespace TastyTrails.Services
                 await session.ExecuteWriteAsync(async tx =>
                 {
                     var query = @"
-                        MATCH (u:User {id: $userId}), (r:Restaurant {id: $restaurantId})
+                    MATCH (u:User {id: $userId}), (r:Restaurant {id: $restaurantId})
 
-                        OPTIONAL MATCH (u)-[l:LIKES]->(r)
-                        DELETE l
+                    OPTIONAL MATCH (u)-[l:LIKES]->(r)
+                    DELETE l
+                    WITH u, r // Prenosimo u i r nakon brisanja prvog odnosa
 
-                        OPTIONAL MATCH (u)-[d:DISLIKES]->(r)
-                        DELETE d
+                    OPTIONAL MATCH (u)-[d:DISLIKES]->(r)
+                    DELETE d
+                    WITH u, r // Prenosimo ih ponovo nakon brisanja drugog odnosa
                     ";
 
                     query += relationType == "LIKES"

@@ -360,5 +360,34 @@ namespace TastyTrails.Services
             // Vraća true ako je barem jedan dokument obrisan
             return result.DeletedCount > 0;
         }
+
+        public async Task<List<UserPreviewModel>> GetFollowDetailsAsync(Guid userId, string type)
+        {
+            // 1. Dohvati korisnika iz kolekcije
+            var user = await Users.Find(u => u.Id == userId).FirstOrDefaultAsync();
+
+            if (user == null) return new List<UserPreviewModel>();
+
+            // 2. Odaberi pravi niz (Following ili Followers)
+            List<Guid> targetIds = type.ToLower() == "followers"
+                ? user.Followers
+                : user.Following;
+
+            if (targetIds == null || targetIds.Count == 0)
+                return new List<UserPreviewModel>();
+
+            // 3. Pronađi sve te korisnike u bazi
+            // Pošto su u bazi Guid-ovi (čak i ako su sačuvani kao stringovi, drajver će ih mapirati)
+            var filter = Builders<MongoUser>.Filter.In(u => u.Id, targetIds);
+            var usersFromDb = await Users.Find(filter).ToListAsync();
+
+            // 4. Mapiranje na UserPreviewModel
+            return usersFromDb.Select(u => new UserPreviewModel
+            {
+                Id = u.Id,
+                Username = u.Username,
+                ProfileImage = u.ProfileImage
+            }).ToList();
+        }
     }
 }

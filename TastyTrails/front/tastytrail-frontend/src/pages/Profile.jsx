@@ -24,6 +24,18 @@ export default function Profile() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentReview, setCurrentReview] = useState(null); // Recenzija koju menjamo
 
+    const [showFollowModal, setShowFollowModal] = useState(false);
+    const [modalTitle, setModalTitle] = useState("");
+    const [modalUsers, setModalUsers] = useState([]);
+    const [isModalLoading, setIsModalLoading] = useState(false);
+
+    const handleNavigateToUserProfile = (targetUserId) => {
+        setShowFollowModal(false); // Zatvori modal
+        navigate(`/profile/${targetUserId}`); // Navigacija na novi ID
+    };
+
+    const [savedRestaurants, setSavedRestaurants] = useState([]);
+
     // 1. Fetch Podataka
     useEffect(() => {
         const fetchData = async () => {
@@ -67,6 +79,15 @@ export default function Profile() {
                 } else {
                     setReviews([]);
                 }
+
+                const savedRes = await fetch(`http://localhost:5146/api/user/${id}/saved`, {
+                    headers: { 'Authorization': `Bearer ${authToken}` }
+                });
+
+                if (savedRes.ok) {
+                    const savedData = await savedRes.json();
+                    setSavedRestaurants(savedData || []);
+                }
             } catch (err) {
                 console.error("Greška pri učitavanju:", err);
                 setReviews([]);
@@ -102,6 +123,7 @@ export default function Profile() {
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm]);
 
+   //Follow
     const handleFollowToggle = async () => {
         const authToken = localStorage.getItem("authToken");
         if (!authToken) {
@@ -127,6 +149,40 @@ export default function Profile() {
             }
         } catch (err) {
             console.error("Mrežna greška:", err);
+        }
+    };
+
+    const openFollowModal = async (type) => {
+        setModalTitle(type === "followers" ? "Followers" : "Following");
+        setShowFollowModal(true);
+        setModalUsers([]);
+        setIsModalLoading(true);
+
+        try {
+            const token = localStorage.getItem('authToken');
+
+            // ISPRAVLJENO: Promenljiva se zove 'user', a ID može biti 'id' ili 'Id'
+            const userId = user?.id || user?.Id;
+
+            if (!userId) {
+                console.error("ID korisnika nije pronađen.");
+                return;
+            }
+
+            const res = await fetch(`http://localhost:5146/api/user/relations/${userId}/${type}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                setModalUsers(data);
+            } else {
+                console.error("Server vratio grešku:", res.status);
+            }
+        } catch (err) {
+            console.error("Greška pri učitavanju liste:", err);
+        } finally {
+            setIsModalLoading(false);
         }
     };
 
@@ -211,11 +267,20 @@ export default function Profile() {
                             <strong className="stat-number">{reviews.length}</strong>
                             <span className="stat-label">RECENZIJE</span>
                         </div>
-                        <div className="stat-item">
+                        <div
+                            className="stat-item"
+                            onClick={() => openFollowModal("followers")}
+                            style={{ cursor: 'pointer' }}
+                        >
                             <strong className="stat-number">{followersCount}</strong>
                             <span className="stat-label">FOLLOWERS</span>
                         </div>
-                        <div className="stat-item">
+
+                        <div
+                            className="stat-item"
+                            onClick={() => openFollowModal("following")}
+                            style={{ cursor: 'pointer' }}
+                        >
                             <strong className="stat-number">
                                 {(user?.following?.length || user?.Following?.length || 0)}
                             </strong>
@@ -322,6 +387,77 @@ export default function Profile() {
                         <div className="modal-buttons">
                             <button className="save-btn" onClick={handleUpdateReview}>Sačuvaj</button>
                             <button className="cancel-btn" onClick={() => setIsEditModalOpen(false)}>Otkaži</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            <div className="content-section">
+                <div className="horizontal-divider"></div>
+                <h3 className="section-title">SAČUVANI RESTORANI</h3>
+
+                <div className="reviews-grid">
+                    {savedRestaurants.length > 0 ? (
+                        savedRestaurants.map((rest) => (
+                            <div key={rest.id || rest.Id} className="review-card saved-card">
+                                <h4>{rest.name}</h4>
+                                <p className="review-cuisine">
+                                    {rest.cuisine && rest.cuisine !== 'unknown'
+                                        ? rest.cuisine
+                                        : 'Nije navedeno'}
+                                </p>
+                                <button
+                                    className="view-profile-btn"
+                                    onClick={() => navigate(`/explore`)}
+                                    style={{ marginTop: '10px', width: '100%' }}
+                                >
+                                    Pogledaj
+                                </button>
+                            </div>
+                        ))
+                    ) : (
+                        <p style={{ color: 'gray', marginTop: '20px' }}>Nema sačuvanih restorana.</p>
+                    )}
+                </div>
+            </div>
+
+            {showFollowModal && (
+                <div className="modal-overlay" onClick={() => setShowFollowModal(false)}>
+                    <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>{modalTitle}</h3>
+                            <button className="close-button" onClick={() => setShowFollowModal(false)}>&times;</button>
+                        </div>
+
+                        <div className="modal-body">
+                            {isModalLoading ? (
+                                <div className="loader">Učitavanje...</div>
+                            ) : modalUsers.length > 0 ? (
+                                    modalUsers.map((user) => (                                      
+                                        <div key={user.id} className="user-row">
+                                            <div className="user-info">
+                                                {user.profileImage ? (
+                                                    <img
+                                                        src={user.profileImage}
+                                                        alt={user.username}
+                                                        className="modal-avatar"
+                                                    />
+                                                ) : (
+                                                    <span className="modal-avatar-placeholder">👤</span>
+                                                )}
+                                                <span className="modal-username">{user.username}</span>
+                                            </div>
+                                            <button
+                                                className="view-profile-btn"
+                                                onClick={() => handleNavigateToUserProfile(user.id)}
+                                            >
+                                                Profil
+                                            </button>
+                                        </div>
+                                    ))
+                            ) : (
+                                <p className="no-data">Nema korisnika za prikaz.</p>
+                            )}
                         </div>
                     </div>
                 </div>
