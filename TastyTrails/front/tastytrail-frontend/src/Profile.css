@@ -180,18 +180,47 @@
 }
 
 /* ZAJEDNIČKI STIL ZA KARTICE */
-.review-card, .saved-card {
-    background: white;
-    border: 1px solid #dbdbdb;
-    padding: 25px;
+.review-card {
+    background: #fff;
     border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    transition: transform 0.2s, box-shadow 0.2s;
+    padding: 20px;
+    padding-bottom: 70px; /* KLJUČNO: Ostavlja prazan prostor na dnu za dugmiće */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    position: relative; /* Da bi dugmići mogli da se pozicioniraju u odnosu na nju */
+    border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    min-height: 200px;
+    transition: transform 0.2s;
 }
 
+.saved-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    padding-bottom: 70px; /* KLJUČNO: Ostavlja prazan prostor na dnu za dugmiće */
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    position: relative; /* Da bi dugmići mogli da se pozicioniraju u odnosu na nju */
+    border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    min-height: 176px;
+    transition: transform 0.2s;
+}
     .review-card:hover, .saved-card:hover {
         transform: translateY(-4px);
         box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+    }
+
+    .saved-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px; /* Širina trake */
+        height: 100%;
+        background-color: #ffcc00; /* Tvoja zlatno-žuta boja */
+        border-radius: 12px 0 0 12px; /* Zaobljene samo leve ivice trake */
     }
 
 .review-cuisine {
@@ -221,6 +250,15 @@
     border: 1px solid #efefef;
     border-radius: 12px;
     margin-top: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Centriraj dugmiće vodoravno */
+    gap: 8px;
+    padding: 10px 0;
+    margin-top: auto; /* Ovo je magija koja gura dugmiće na dno kartice */
+    background-color: transparent; /* Lepše izgleda unutar kartice */
+    border: none;
+    box-shadow: none;
 }
 
 .action-text-btn {
@@ -354,4 +392,156 @@ body {
 /* Sklanjamo separator jer nam više ne treba pored ovakvih dugmadi */
 .action-separator {
     display: none;
+}
+
+/* Osiguraj da se modal zapravo vidi */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7); /* Zatamnjena pozadina */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Da bude ispred svega */
+}
+
+.edit-modal {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    z-index: 10000;
+}
+
+/* --- KARTICE RECENZIJA --- */
+.reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 20px 0;
+}
+
+.review-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    position: relative;
+    border: 1px solid #eee;
+    transition: transform 0.2s;
+}
+
+    .review-card:hover {
+        transform: translateY(-5px);
+    }
+
+/* Dugmići unutar kartice - sada su dole desno i diskretni */
+.review-admin-actions-center {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    border-top: 1px solid #f0f0f0;
+    padding-top: 10px;
+    justify-content: flex-end;
+}
+
+.action-text-btn {
+    background: none;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    text-transform: uppercase;
+}
+
+.edit-link {
+    color: #007bff;
+}
+
+.delete-link {
+    color: #dc3545;
+}
+
+/* --- MODAL (POPUP) - FIX --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px); /* Moderni zamućeni efekat */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.edit-modal {
+    background: white;
+    width: 100%;
+    max-width: 450px;
+    padding: 30px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+    .edit-modal h3 {
+        margin-bottom: 10px;
+        color: #333;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 10px;
+    }
+
+    .edit-modal label {
+        font-weight: 600;
+        font-size: 14px;
+        color: #666;
+    }
+
+    .edit-modal input,
+    .edit-modal textarea {
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        font-family: inherit;
+    }
+
+    .edit-modal textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+.modal-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.save-btn {
+    background: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.cancel-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
 }
