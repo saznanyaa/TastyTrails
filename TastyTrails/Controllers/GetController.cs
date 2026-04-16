@@ -87,7 +87,7 @@ namespace TastyTrails.Controllers
                 TotalReviews = r.TotalReviews,
                 Latitude = r.Coordinates?.Lat,
                 Longitude = r.Coordinates?.Lng
-            }).ToList();
+            }).ToList().Take(3);
 
             return Ok(result);
         }

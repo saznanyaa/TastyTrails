@@ -2,6 +2,17 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from "recharts";
+import "leaflet/dist/leaflet.css";
+import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+
+delete L.Icon.Default.prototype._getIconUrl;
+
+L.Icon.Default.mergeOptions({
+    iconRetinaUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
+    iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+    shadowUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
+});
 
 export default function RestaurantContent() {
     const { id } = useParams();
@@ -63,6 +74,7 @@ export default function RestaurantContent() {
         fetchData();
     }, [id]);
 
+    console.log("RESTAURANT:", restaurant);
     console.log("IS ARRAY:", Array.isArray(recentReviews));
     console.log("RECENT:", recentReviews);
     console.log("ALL:", reviews);
@@ -209,6 +221,35 @@ export default function RestaurantContent() {
                         <p>No recommendations yet</p>
                     )}
                 </div>
+            </div>
+            <div style={{
+                background: "white",
+                padding: "20px",
+                borderRadius: "12px",
+                boxShadow: "0 2px 10px rgba(0,0,0,0.08)",
+                marginTop: "20px"
+            }}>
+                <h3>📍 Location</h3>
+
+                {restaurant?.coordinates.lat && restaurant?.coordinates.lng ? (
+                    <div style={{ height: "300px", width: "100%", borderRadius: "12px", overflow: "hidden" }}>
+                        <MapContainer
+                            center={[restaurant.coordinates.lat, restaurant.coordinates.lng]}
+                            zoom={15}
+                            style={{ height: "100%", width: "100%" }}
+                        >
+                            <TileLayer
+                                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                            />
+
+                            <Marker position={[restaurant.coordinates.lat, restaurant.coordinates.lng]}>
+                                
+                            </Marker>
+                        </MapContainer>
+                    </div>
+                ) : (
+                    <p>No location available for this restaurant.</p>
+                )}
             </div>    
         </div>
     );
