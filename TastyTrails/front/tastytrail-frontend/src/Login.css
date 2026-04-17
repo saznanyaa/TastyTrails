@@ -1,0 +1,120 @@
+/* BACKGROUND */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #f5f5f5, #eaeaea);
+    font-family: sans-serif;
+}
+
+/* CARD */
+.login-card {
+    width: 100%;
+    max-width: 420px;
+    padding: 45px 35px;
+    border-radius: 16px;
+    background: #ffffff;
+    border: 1px solid #ddd;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    animation: fadeIn 0.4s ease;
+}
+
+/* TITLE */
+.login-logo {
+    text-align: center;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    margin-bottom: 5px;
+    font-size: 26px;
+    color: #111;
+}
+
+.login-subtitle {
+    text-align: center;
+    margin-bottom: 35px;
+    color: #888;
+    font-size: 12px;
+    letter-spacing: 2px;
+}
+
+/* FORM */
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.input-group label {
+    font-size: 10px;
+    color: #666;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    display: block;
+}
+
+/* INPUT */
+.input-group input {
+    width: 100%;
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    background: #fafafa;
+    color: #111;
+    font-size: 14px;
+    outline: none;
+    transition: 0.2s;
+}
+
+.input-group input:focus {
+    border: 1px solid #000;
+    background: #fff;
+}
+
+/* BUTTON */
+.login-btn {
+    margin-top: 10px;
+    padding: 14px;
+    border-radius: 10px;
+    border: none;
+    background: #111;
+    color: #fff;
+    font-weight: bold;
+    font-size: 13px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: 0.2s;
+}
+
+.login-btn:hover {
+    transform: scale(1.03);
+    background: #333;
+}
+
+/* FOOTER */
+.login-footer {
+    text-align: center;
+    margin-top: 25px;
+    font-size: 11px;
+    color: #777;
+    letter-spacing: 1px;
+}
+
+.login-footer span {
+    color: #000;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-left: 5px;
+}
+
+/* ANIMATION */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
