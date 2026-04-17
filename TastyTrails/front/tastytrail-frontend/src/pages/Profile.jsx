@@ -25,21 +25,15 @@ export default function Profile() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentReview, setCurrentReview] = useState(null);
 
+    // Follow Modal State
     const [showFollowModal, setShowFollowModal] = useState(false);
     const [modalTitle, setModalTitle] = useState("");
     const [modalUsers, setModalUsers] = useState([]);
     const [isModalLoading, setIsModalLoading] = useState(false);
 
-    const handleNavigateToUserProfile = (targetUserId) => {
-        setShowFollowModal(false);
-        navigate(`/profile/${targetUserId}`);
-    };
-
-    // 1. Fetch Podataka - FIX: Sada resetuje state pre svakog novog učitavanja
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            // RESET STATE-A: Da se ne vide podaci starog profila dok se novi učitava
             setReviews([]);
             setSavedRestaurants([]);
             setUser(null);
@@ -65,9 +59,6 @@ export default function Profile() {
                         );
                         setIsFollowing(amIFollowing);
                     }
-                } else if (userRes.status === 401) {
-                    localStorage.clear();
-                    navigate("/login");
                 }
 
                 // Reviews
@@ -79,25 +70,16 @@ export default function Profile() {
                     setReviews(reviewsData || []);
                 }
 
-                // Saved Restaurants - Dodajemo uslov isOwnProfile
-                // Pozivamo API samo ako korisnik gleda sopstveni profil
+                // Saved Restaurants - Samo za vlasnika
                 if (isOwnProfile) {
                     const savedRes = await fetch(`http://localhost:5146/api/user/${id}/saved`, {
                         headers: { 'Authorization': `Bearer ${authToken}` }
                     });
-
                     if (savedRes.ok) {
                         const savedData = await savedRes.json();
                         setSavedRestaurants(savedData || []);
-                    } else {
-                        // Opciono: ako API vrati grešku čak i za vlasnika
-                        console.warn("Nije moguće učitati sačuvane restorane.");
                     }
-                } else {
-                    // Ako nije sopstveni profil, isprazni listu da ne ostanu podaci od prethodnog profila
-                    setSavedRestaurants([]);
                 }
-
             } catch (err) {
                 console.error("Greška pri učitavanju:", err);
             } finally {
@@ -106,9 +88,9 @@ export default function Profile() {
         };
 
         if (id) fetchData();
-    }, [id, navigate]); // Prati promenu ID-a u URL-u
+    }, [id, isOwnProfile]);
 
-    // Search Logic
+    // Search Logic (Debounce)
     useEffect(() => {
         const delayDebounceFn = setTimeout(async () => {
             if (searchTerm.trim().length > 1) {
@@ -121,47 +103,26 @@ export default function Profile() {
                         const data = await res.json();
                         setSearchResults(data);
                     }
-                } catch (err) {
-                    console.error("Greška pri pretrazi:", err);
-                }
-            } else {
-                setSearchResults([]);
-            }
+                } catch (err) { console.error(err); }
+            } else { setSearchResults([]); }
         }, 300);
         return () => clearTimeout(delayDebounceFn);
     }, [searchTerm]);
 
     const handleFollowToggle = async () => {
         const authToken = localStorage.getItem("authToken");
-        if (!authToken) {
-            alert("Morate biti ulogovani.");
-            return;
-        }
-
-        // Određujemo metodu na osnovu akcije
         const method = isFollowing ? 'DELETE' : 'POST';
         const endpoint = isFollowing ? 'unfollow' : 'follow';
-        const url = `http://localhost:5146/api/user/${endpoint}/${id}`;
-
         try {
-            const res = await fetch(url, {
-                method: method, // OVO JE KLJUČNA IZMENA
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                }
+            const res = await fetch(`http://localhost:5146/api/user/${endpoint}/${id}`, {
+                method: method,
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
             });
-
             if (res.ok) {
                 setIsFollowing(!isFollowing);
                 setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
-            } else {
-                const errorData = await res.json();
-                console.error("Server error:", errorData);
             }
-        } catch (err) {
-            console.error("Mrežna greška:", err);
-        }
+        } catch (err) { console.error(err); }
     };
 
     const openFollowModal = async (type) => {
@@ -203,10 +164,7 @@ export default function Profile() {
         try {
             const res = await fetch(`http://localhost:5146/api/user/review/update`, {
                 method: 'PUT',
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
                 body: JSON.stringify(currentReview)
             });
             if (res.ok) {
@@ -220,15 +178,14 @@ export default function Profile() {
 
     return (
         <div className="profile-page">
-            {/* Sakriveni file input */}
-            <input type="file" ref={fileInputRef} onChange={(e) => {
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} onChange={(e) => {
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
                     reader.onloadend = () => setProfileImage(reader.result);
                     reader.readAsDataURL(file);
                 }
-            }} style={{ display: 'none' }} />
+            }} />
 
             <div className="top-section-container">
                 <div className="left-info-box">
@@ -236,9 +193,7 @@ export default function Profile() {
                         {profileImage ? <img src={profileImage} className="profile-img-element" alt="Profile" /> : <span style={{ fontSize: '50px' }}>👤</span>}
                     </div>
                     <div className="user-text-container">
-                        <h2 className="username-text">
-                            {(user?.username || user?.Username || "KORISNIK").toUpperCase()}
-                        </h2>
+                        <h2 className="username-text">{(user?.username || user?.Username || "KORISNIK").toUpperCase()}</h2>
                     </div>
                 </div>
 
@@ -248,14 +203,12 @@ export default function Profile() {
                             <strong className="stat-number">{reviews.length}</strong>
                             <span className="stat-label">RECENZIJE</span>
                         </div>
-                        <div className="stat-item" onClick={() => openFollowModal("followers")}>
+                        <div className="stat-item clickable" onClick={() => openFollowModal("followers")}>
                             <strong className="stat-number">{followersCount}</strong>
                             <span className="stat-label">FOLLOWERS</span>
                         </div>
-                        <div className="stat-item" onClick={() => openFollowModal("following")}>
-                            <strong className="stat-number">
-                                {user?.following?.length || user?.Following?.length || 0}
-                            </strong>
+                        <div className="stat-item clickable" onClick={() => openFollowModal("following")}>
+                            <strong className="stat-number">{user?.following?.length || user?.Following?.length || 0}</strong>
                             <span className="stat-label">FOLLOWING</span>
                         </div>
                     </div>
@@ -268,7 +221,7 @@ export default function Profile() {
 
                 <div className="right-search-area">
                     <div className="search-wrapper">
-                        <input type="text" placeholder="Pretraži korisnike..." className="profile-search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        <input type="text" placeholder="Pretraži..." className="profile-search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         {searchResults.length > 0 && (
                             <div className="search-dropdown">
                                 {searchResults.map((u) => (
@@ -282,7 +235,7 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* RECENZIJE SEKCIJA */}
+            {/* RECENZIJE */}
             <div className="content-section">
                 <div className="horizontal-divider"></div>
                 <h3 className="section-title">{isOwnProfile ? "MOJE RECENZIJE" : "RECENZIJE KORISNIKA"}</h3>
@@ -291,9 +244,7 @@ export default function Profile() {
                         <div key={rev.id || rev.Id} className="review-card">
                             <div className="review-rating">⭐ {rev.rating}</div>
                             <h4>{rev.name || rev.restaurantName}</h4>
-                            <p className="review-cuisine">{rev.restaurantName || 'RESTORAN'}</p>
                             <p className="review-comment">{rev.comment}</p>
-
                             {isOwnProfile && (
                                 <div className="review-admin-actions-center">
                                     <button className="action-text-btn edit-link" onClick={() => openEditModal(rev)}>Edit</button>
@@ -305,27 +256,31 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* SAČUVANI RESTORANI SEKCIJA */}
-            <div className="content-section">
-                <div className="horizontal-divider"></div>
-                <h3 className="section-title">SAČUVANI RESTORANI</h3>
-                <div className="reviews-grid">
-                    {savedRestaurants.length > 0 ? (
-                        savedRestaurants.map((rest) => (
-                            <div key={rest.id || rest.Id} className="review-card saved-card">
-                                <h4>{rest.name}</h4>
-                                <p className="review-cuisine">{rest.cuisine || 'Nije navedeno'}</p>
-                                <button className="view-profile-btn" onClick={() => navigate(`/explore`)}>
-                                    Pogledaj
-                                </button>
-                            </div>
-                        ))
-                    ) : <p style={{ color: 'gray' }}>Nema sačuvanih restorana.</p>}
+            {/* SAČUVANI RESTORANI - Samo ako je moj profil */}
+            {isOwnProfile && (
+                <div className="content-section">
+                    <div className="horizontal-divider"></div>
+                    <h3 className="section-title">SAČUVANI RESTORANI</h3>
+                    <div className="reviews-grid">
+                        {savedRestaurants.length > 0 ? (
+                            savedRestaurants.map((rest) => (
+                                <div key={rest.id || rest.Id} className="review-card saved-card">
+                                    <h4>{rest.name}</h4>
+                                    <p className="review-cuisine">
+                                        {(!rest.cuisine || rest.cuisine.toLowerCase() === 'unknown')
+                                            ? 'Nije navedeno'
+                                            : rest.cuisine}
+                                    </p>
+                                    <button className="view-profile-btn" onClick={() => navigate(`/explore`)}>Pogledaj</button>
+                                </div>
+                            ))
+                        ) : <p style={{ color: 'gray' }}>Nema sačuvanih restorana.</p>}
+                    </div>
                 </div>
-            </div>
+            )}
 
-            {/* MODALI */}
-            {isEditModalOpen && (
+            {/* EDIT MODAL */}
+            {isEditModalOpen && currentReview && (
                 <div className="modal-overlay">
                     <div className="edit-modal">
                         <h3>Izmeni recenziju</h3>
@@ -341,7 +296,25 @@ export default function Profile() {
                 </div>
             )}
 
-            {/* Follow Modal ostaje isti kao tvoj originalni... */}
+            {/* FOLLOWERS / FOLLOWING MODAL */}
+            {showFollowModal && (
+                <div className="modal-overlay" onClick={() => setShowFollowModal(false)}>
+                    <div className="follow-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>{modalTitle}</h3>
+                            <button className="close-btn" onClick={() => setShowFollowModal(false)}>&times;</button>
+                        </div>
+                        <div className="modal-body">
+                            {isModalLoading ? <p>Učitavanje...</p> :
+                                modalUsers.length > 0 ? modalUsers.map(u => (
+                                    <div key={u.id || u.Id} className="modal-user-item" onClick={() => { navigate(`/profile/${u.id || u.Id}`); setShowFollowModal(false); }}>
+                                        <span>👤 {u.username || u.Username}</span>
+                                    </div>
+                                )) : <p>Nema korisnika za prikaz.</p>}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
