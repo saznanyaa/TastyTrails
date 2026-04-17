@@ -259,15 +259,20 @@ namespace TastyTrails.Services
             var query = @"
                 MATCH (r:Restaurant {id: $id})
 
+                OPTIONAL MATCH (r)<-[rr:RATED]-(ur:User)
+                WITH r, avg(rr.score) AS avgRating
+
                 MATCH (u:User)-[rel]->(r)
                 WHERE type(rel) IN ['LIKES', 'RATED']
 
                 MATCH (u)-[rel2]->(rec:Restaurant)
-                WHERE rec.id <> $id 
+                WHERE rec.id <> $id
                 AND type(rel2) IN ['LIKES', 'RATED']
                 AND NOT (u)-[:DISLIKES]->(rec)
 
-                WITH rec,
+                OPTIONAL MATCH (rec)<-[rr2:RATED]-(u2:User)
+                WITH rec, avgRating,
+                    avg(rr2.score) AS recAvg,
                     sum(
                         CASE
                             WHEN type(rel2) = 'LIKES' THEN 3
@@ -275,6 +280,11 @@ namespace TastyTrails.Services
                             ELSE 0
                         END
                     ) AS Score
+
+                WHERE 
+                    (avgRating >= 3 AND recAvg >= 3)
+                    OR
+                    (avgRating < 3 AND recAvg < 3)
 
                 RETURN rec.id AS Id, rec.name AS Name, Score
                 ORDER BY Score DESC
