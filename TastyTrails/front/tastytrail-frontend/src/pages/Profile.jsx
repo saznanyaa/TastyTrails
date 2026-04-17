@@ -31,6 +31,12 @@ export default function Profile() {
     const [modalUsers, setModalUsers] = useState([]);
     const [isModalLoading, setIsModalLoading] = useState(false);
 
+    const handleNavigateToUserProfile = (targetUserId) => {
+        setShowFollowModal(false);
+        navigate(`/profile/${targetUserId}`);
+    };
+
+    // 1. Fetch Podataka - FIX: Sada resetuje state pre svakog novog učitavanja
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
@@ -111,18 +117,35 @@ export default function Profile() {
 
     const handleFollowToggle = async () => {
         const authToken = localStorage.getItem("authToken");
+        if (!authToken) {
+            alert("Morate biti ulogovani.");
+            return;
+        }
+
+        // Određujemo metodu na osnovu akcije
         const method = isFollowing ? 'DELETE' : 'POST';
         const endpoint = isFollowing ? 'unfollow' : 'follow';
+        const url = `http://localhost:5146/api/user/${endpoint}/${id}`;
+
         try {
-            const res = await fetch(`http://localhost:5146/api/user/${endpoint}/${id}`, {
-                method: method,
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' }
+            const res = await fetch(url, {
+                method: method, // OVO JE KLJUČNA IZMENA
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
             });
+
             if (res.ok) {
                 setIsFollowing(!isFollowing);
                 setFollowersCount(prev => isFollowing ? prev - 1 : prev + 1);
+            } else {
+                const errorData = await res.json();
+                console.error("Server error:", errorData);
             }
-        } catch (err) { console.error(err); }
+        } catch (err) {
+            console.error("Mrežna greška:", err);
+        }
     };
 
     const openFollowModal = async (type) => {
@@ -164,7 +187,10 @@ export default function Profile() {
         try {
             const res = await fetch(`http://localhost:5146/api/user/review/update`, {
                 method: 'PUT',
-                headers: { 'Authorization': `Bearer ${authToken}`, 'Content-Type': 'application/json' },
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(currentReview)
             });
             if (res.ok) {
@@ -235,7 +261,7 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* RECENZIJE */}
+            {/* RECENZIJE SEKCIJA */}
             <div className="content-section">
                 <div className="horizontal-divider"></div>
                 <h3 className="section-title">{isOwnProfile ? "MOJE RECENZIJE" : "RECENZIJE KORISNIKA"}</h3>
@@ -256,36 +282,36 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* SAČUVANI RESTORANI - Samo ako je moj profil */}
-            {isOwnProfile && (
-                <div className="content-section">
-                    <div className="horizontal-divider"></div>
-                    <h3 className="section-title">SAČUVANI RESTORANI</h3>
-                    <div className="reviews-grid">
-                        {savedRestaurants.length > 0 ? (
-                            savedRestaurants.map((rest) => (
-                                <div key={rest.id || rest.Id} className="review-card saved-card">
-                                    <h4>{rest.name}</h4>
-                                    <p className="review-cuisine">
-                                        {(!rest.cuisine || rest.cuisine.toLowerCase() === 'unknown')
-                                            ? 'Nije navedeno'
-                                            : rest.cuisine}
-                                    </p>
-                                    <button className="view-profile-btn" onClick={() => navigate(`/explore`)}>Pogledaj</button>
-                                </div>
-                            ))
-                        ) : <p style={{ color: 'gray' }}>Nema sačuvanih restorana.</p>}
-                    </div>
+            {/* SAČUVANI RESTORANI SEKCIJA */}
+            <div className="content-section">
+                <div className="horizontal-divider"></div>
+                <h3 className="section-title">SAČUVANI RESTORANI</h3>
+                <div className="reviews-grid">
+                    {savedRestaurants.length > 0 ? (
+                        savedRestaurants.map((rest) => (
+                            <div key={rest.id || rest.Id} className="review-card saved-card">
+                                <h4>{rest.name}</h4>
+                                <p className="review-cuisine">
+                                    {(!rest.cuisine || rest.cuisine.toLowerCase() === 'unknown')
+                                        ? 'Nije navedeno'
+                                        : rest.cuisine}
+                                </p>
+                                <button className="view-profile-btn" onClick={() => navigate(`/explore`)}>
+                                    Pogledaj
+                                </button>
+                            </div>
+                        ))
+                    ) : <p style={{ color: 'gray' }}>Nema sačuvanih restorana.</p>}
                 </div>
-            )}
+            </div>
 
-            {/* EDIT MODAL */}
-            {isEditModalOpen && currentReview && (
+            {/* MODALI */}
+            {isEditModalOpen && (
                 <div className="modal-overlay">
                     <div className="edit-modal">
                         <h3>Izmeni recenziju</h3>
                         <label>Ocena:</label>
-                        <input type="number" min="1" max="5" value={currentReview.rating} onChange={(e) => setCurrentReview({ ...currentReview, rating: e.target.value })} />
+                        <input type="number" min="1" max="5" value={currentReview.rating} onChange={(e) => setCurrentReview({ ...currentReview, rating: Number(e.target.value) })} />
                         <label>Komentar:</label>
                         <textarea value={currentReview.comment} onChange={(e) => setCurrentReview({ ...currentReview, comment: e.target.value })} />
                         <div className="modal-buttons">

@@ -274,10 +274,8 @@ export default function Explore() {
                     View details →
                     </div>
 
-                    {/* Divider */}
                     <div style={{ height: "1px", background: "#eee", margin: "8px 0" }} />
 
-                    {/* Reviews header */}
                     <p style={{ fontWeight: "600", margin: 0, fontSize: "13px" }}>
                     Recent reviews
                     </p>
@@ -285,7 +283,6 @@ export default function Explore() {
                     last three days
                     </p>
 
-                    {/* Reviews */}
                     {selectedRestaurant?.id === r.id ? (
       <>
         {recentReviews.length > 0 ? (
