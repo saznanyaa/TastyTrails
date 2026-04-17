@@ -184,8 +184,9 @@ export default function Profile() {
 
     const handleUpdateReview = async () => {
         const authToken = localStorage.getItem("authToken");
+        const loggedInUserId = localStorage.getItem("userId");
         try {
-            const res = await fetch(`http://localhost:5146/api/user/review/update`, {
+            const res = await fetch(`http://localhost:5146/api/user/update/${loggedInUserId}/review/${currentReview.restaurantId}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
