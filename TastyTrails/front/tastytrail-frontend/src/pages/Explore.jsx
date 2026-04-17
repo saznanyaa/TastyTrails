@@ -2,8 +2,8 @@
 import "leaflet/dist/leaflet.css";
 import { useEffect, useState } from "react";
 import axios, { all } from "axios";
-import L from "leaflet";
-import { useNavigate, useLocation } from "react-router-dom";
+import L, { map } from "leaflet";
+import { useNavigate, useLocation, useParams } from "react-router-dom";
 
 export default function Explore() {
     const [restaurants, setRestaurants] = useState([]);
@@ -26,6 +26,7 @@ export default function Explore() {
     
     const navigate = useNavigate();
     const location = useLocation();
+    const { city } = useParams();
 
     const defaultIcon = L.icon({
         iconUrl:"/icons/restaurant.png",
@@ -39,6 +40,12 @@ export default function Explore() {
         iconUrl: "/icons/recommendation.png",
         iconSize: [35, 35],
     });
+
+    const cityCoords = {
+        Beograd: [44.7866, 20.4489],
+        Nis: [43.3209, 21.8958],
+        "Novi Sad": [45.2671, 19.8335]
+    };
 
     const handleMarkerClick = async (restaurant) => {
         setSelectedRestaurant(restaurant);
@@ -128,11 +135,18 @@ export default function Explore() {
     useEffect(() => {
         const fetchData = async () => {
             try {
+                const allResPromise = axios.get(`http://localhost:5146/api/get/restaurants/bycity/${city}`);
+                const trendingPromise = axios.get(`http://localhost:5146/api/get/restaurants/trending/${city}`)
+                    .catch(err => {
+                        console.warn("No trending restaurants:", err.response?.data || err.message);
+                        return { data: [] };
+                    });
+                
                 const [allRes, trendingRes] = await Promise.all([
-                    axios.get("http://localhost:5146/api/get/mongoRestaurants"),
-                    axios.get("http://localhost:5146/api/get/restaurants/trending/Beograd")
-                ]);
-
+                allResPromise,
+                trendingPromise
+            ]);
+                    
                 let recommendedData = [];
                 let savedIds = [];
 
@@ -144,7 +158,7 @@ export default function Explore() {
                                 { headers: { Authorization: `Bearer ${token}` } }
                             ),
                             axios.get(
-                                `http://localhost:5146/api/user/${userId}/recommendations/Beograd`,
+                                `http://localhost:5146/api/user/${userId}/recommendations/${city}`,
                                 { headers: { Authorization: `Bearer ${token}` } }
                             )
                         ]);
@@ -189,12 +203,15 @@ export default function Explore() {
     console.log("TRENDING:", trending.length);
     console.log("RECOMMENDED:", recommended.length);
     console.log("SAVED:", savedRestaurants.length);
+
+    const mapCenter = cityCoords[city] || [44.7866, 20.4489];
   
     return (
     <div style={{ flex: 1, display: "flex" }}>
       <MapContainer
-        center={[44.7866, 20.4489]}
+        center={mapCenter}
         zoom={15}
+        key ={city}
         style={{ flex: 1 }}
       >
         <TileLayer

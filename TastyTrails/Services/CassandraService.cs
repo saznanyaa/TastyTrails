@@ -31,6 +31,26 @@ namespace TastyTrails.Services
             _mapper = new Mapper(_session);
         }
 
+        public async Task<bool> CityHasRestaurants(string city)
+        {
+            var query = "SELECT id FROM restaurants_by_city WHERE city = ? LIMIT 1";
+
+            var statement = new SimpleStatement(query, city);
+            var result = await _session.ExecuteAsync(statement);
+
+            return result.Any();
+        }
+
+        public async Task<List<Guid>> GetRestaurantIdsByCity(string city)
+        {
+            var query = "SELECT id FROM restaurants_by_city WHERE city = ?";
+
+            var statement = new SimpleStatement(query, city);
+            var result = await _session.ExecuteAsync(statement);
+
+            return result.Select(r => r.GetValue<Guid>("id")).ToList();
+        }
+
         public async Task InsertRestaurantAsync(SeedRestaurant r)
         {
             var statement = await _session.PrepareAsync("INSERT INTO restaurants_by_city (city, id, name, latitude, longitude, cuisine, popularity_score) VALUES (?,?,?,?,?,?,?)");

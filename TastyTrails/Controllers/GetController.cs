@@ -125,7 +125,33 @@ namespace TastyTrails.Controllers
             return Ok(analytics);
         }
 
-       
+        [HttpGet("restaurants/bycity/{city}")]
+        public async Task<IActionResult> GetRestaurantsByCity(string city) 
+        {
+            var restaurantIds = await _cassandra.GetRestaurantIdsByCity(city);
+
+            var restaurants = new List<MongoRestaurant>();
+
+            foreach(var id in restaurantIds)
+            {
+                var rest = await _mongo.GetRestaurantById(id);
+                if(rest != null)
+                    restaurants.Add(rest);
+            }
+
+             var result = restaurants.Select(r => new
+             {
+                 Id = r.Id,
+                 Name = r.Name,
+                 AverageRating = r.AverageRating,
+                 TotalReviews = r.TotalReviews,
+                 Latitude = r.Coordinates?.Lat,
+                 Longitude = r.Coordinates?.Lng
+             }).ToList();
+
+             return Ok(result);
+        }
+
         //---restaurant_review_events-------------------------------------------------------------------------
         [HttpGet("{id}/reviews/recent")]
         public async Task<IActionResult> GetRecentReviews(Guid id)

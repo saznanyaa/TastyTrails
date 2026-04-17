@@ -15,7 +15,6 @@ namespace TastyTrails.Services
         public OverpassService()
         {
             _httpClient = new HttpClient();
-            // OBAVEZNO: Overpass zahteva User-Agent, inače blokira zahteve
             _httpClient.DefaultRequestHeaders.Add("User-Agent", "TastyTrails/1.0");
         }
 
@@ -25,22 +24,38 @@ namespace TastyTrails.Services
             {
                 "Beograd" => "(44.7866,20.4489,44.8166,20.4789)",
                 "Novi Sad" => "(45.20,19.78,45.30,19.90)",
-                "Nis" => "(43.28,21.85,43.35,21.95)", // Dodao sam i Niš za svaki slučaj
+                "Nis" => "(43.28,21.85,43.35,21.95)",
                 _ => throw new ArgumentException("Unsupported city!")
             };
 
-            // Upit mora biti spakovan ovako
-            var query = $@"[out:json];node[""amenity""=""restaurant""]{bbox};out;";
+            var query = $@"
+                [out:json][timeout:25];
+                (
+                node[""amenity""=""restaurant""]{bbox};
+                way[""amenity""=""restaurant""]{bbox};
+                );
+                out 25;
+                ";
 
-            // KLJUČNA PROMENA: Podaci se moraju poslati kao "data" parametar
-            var content = new FormUrlEncodedContent(new[]
-            {
-                new KeyValuePair<string, string>("data", query)
-            });
+            HttpResponseMessage response = null;
 
             try
             {
-                var response = await _httpClient.PostAsync("https://overpass-api.de/api/interpreter", content);
+                for (int i = 0; i < 3; i++)
+                {
+                    var content = new FormUrlEncodedContent(new[]
+                    {
+                        new KeyValuePair<string, string>("data", query)
+                    });
+
+                    response = await _httpClient.PostAsync("https://overpass-api.de/api/interpreter", content);
+
+                    if (response.IsSuccessStatusCode)
+                        break;
+
+                    await Task.Delay(1000);
+                }
+                //var response = await _httpClient.PostAsync("https://overpass-api.de/api/interpreter", content);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -49,13 +64,26 @@ namespace TastyTrails.Services
                 }
 
                 var json = await response.Content.ReadAsStringAsync();
+
+                if (!json.TrimStart().StartsWith("{"))
+                {
+                    Console.WriteLine("Overpass returned non-JSON response:");
+                    Console.WriteLine(json);
+
+                    return new List<SeedRestaurant>(); // don't crash
+                }
+
                 var data = JObject.Parse(json);
+
                 var restaurants = new List<SeedRestaurant>();
 
                 if (data["elements"] == null) return restaurants;
 
                 foreach (var element in data["elements"])
                 {
+                    if (element["type"]?.ToString() != "node")
+                        continue;
+                    
                     var tags = element["tags"];
                     if (tags == null || tags["name"] == null) continue;
 
@@ -87,7 +115,7 @@ namespace TastyTrails.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Greška u OverpassService: {ex.Message}");
-                throw;
+                return new List<SeedRestaurant>();
             }
         }
     }

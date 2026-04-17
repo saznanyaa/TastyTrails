@@ -1,0 +1,109 @@
+CREATE TABLE restaurant_views (
+    restaurant_id uuid,
+    viewed_at timestamp,
+    user_id uuid,
+    PRIMARY KEY ((restaurant_id), viewed_at, user_id)
+) WITH default_time_to_live = 2592000;
+
+CREATE TABLE user_saved_restaurants (
+    user_id uuid,
+    restaurant_id uuid,
+    saved_at timestamp,
+    PRIMARY KEY ((user_id), restaurant_id)
+);
+
+CREATE TABLE restaurant_ratings (
+    restaurant_id uuid,
+    user_id uuid,
+    rating_value int,
+    PRIMARY KEY ((restaurant_id), user_id)
+);
+
+CREATE TABLE restaurant_review_events (
+    restaurant_id uuid,
+    reviewed_at timestamp,
+    user_id uuid,
+    PRIMARY KEY ((restaurant_id), reviewed_at, user_id)
+);
+
+CREATE TABLE restaurant_checkins (
+    restaurant_id uuid,
+    checked_in_at timestamp,
+    user_id uuid,
+    PRIMARY KEY ((restaurant_id), checked_in_at, user_id)
+) WITH default_time_to_live = 2592000;
+
+CREATE TABLE trending_by_city_weekly (
+    city text,
+    week_start timestamp,
+    restaurant_id uuid,
+    score counter,
+    PRIMARY KEY ((city, week_start), restaurant_id)
+);
+
+CREATE TABLE trending_by_city_monthly (
+    city text,
+    month_start timestamp,
+    restaurant_id uuid,
+    score counter,
+    PRIMARY KEY ((city, month_start), restaurant_id)
+);
+
+CREATE TABLE trending_results_by_city_weekly (
+    city text,
+    week_start timestamp,
+    rank int,
+    restaurant_id uuid,
+    name text,
+    cuisine text,
+    latitude double,
+    longitude double,
+    score bigint,
+    PRIMARY KEY ((city, week_start), rank)
+) WITH CLUSTERING ORDER BY (rank ASC);
+
+CREATE TABLE trending_results_by_city_monthly (
+    city text,
+    month_start timestamp,
+    rank int,
+    restaurant_id uuid,
+    name text,
+    cuisine text,
+    latitude double,
+    longitude double,
+    score bigint,
+    PRIMARY KEY ((city, month_start), rank)
+) WITH CLUSTERING ORDER BY (rank ASC);
+
+CREATE TABLE restaurant_rating_summary (
+    restaurant_id uuid PRIMARY KEY,
+    rating_sum counter,
+    rating_count counter
+);
+
+CREATE TABLE restaurants_by_city (
+    city text,
+    id uuid,
+    name text,
+    latitude double,
+    longitude double,
+    cuisine text,
+    popularity_score int,
+    PRIMARY KEY ((city), popularity_score, id)
+) WITH CLUSTERING ORDER BY (popularity_score DESC);
+
+CREATE TABLE users (
+    user_id uuid PRIMARY KEY,
+    username text,
+    email text,
+    role text
+);
+
+CREATE TABLE restaurant_lookup (
+    id uuid PRIMARY KEY,
+    city text,
+    cuisine text,
+    name text,
+    latitude double,
+    longitude double
+);

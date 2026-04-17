@@ -26,7 +26,7 @@ function App() {
             <Navbar />
             <Routes location={state?.backgroundLocation || location}>
                 <Route path="/home" element={<Home />} />
-                <Route path="/explore" element={<Explore />} />
+                <Route path="/explore/:city" element={<Explore />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Registration />} />
                 <Route

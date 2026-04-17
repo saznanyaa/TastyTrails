@@ -40,6 +40,18 @@ namespace TastyTrails.Controllers
             _users = database.GetCollection<MongoUser>("users");
         }
 
+        //seed restaurants
+        [HttpGet("SeedCityIfEmpty/{city}")]
+        public async Task<IActionResult> SeedCityIfEmpty(string city)
+        {
+            var existing = await _cassandra.CityHasRestaurants(city);
+
+            if(existing)
+                return Ok($"City {city} already seeded.");
+
+            return await ImportRestaurants(city);
+        }
+
         //it's a get, but it posts to databases so that's why it's here
         [HttpGet("GetRestaurantsFromOverpass")]
         public async Task<IActionResult> ImportRestaurants(string city)
