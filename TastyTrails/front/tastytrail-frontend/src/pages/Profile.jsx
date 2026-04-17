@@ -269,16 +269,13 @@ export default function Profile() {
                 <div className="reviews-grid">
                     {savedRestaurants.length > 0 ? (
                         savedRestaurants.map((rest) => (
-                            <div key={rest.id || rest.Id} className="review-card saved-card">
+                            <div
+                                key={rest.id || rest.Id}
+                                className="review-card saved-card clickable-card"
+                                onClick={() => navigate(`/restaurant/${rest.id || rest.Id}`)}
+                            >
                                 <h4>{rest.name}</h4>
-                                <p className="review-cuisine">
-                                    {(!rest.cuisine || rest.cuisine.toLowerCase() === 'unknown')
-                                        ? 'Nije navedeno'
-                                        : rest.cuisine}
-                                </p>
-                                <button className="view-profile-btn" onClick={() => navigate(`/explore`)}>
-                                    Pogledaj
-                                </button>
+                                <p className="review-cuisine">{rest.cuisine || 'Nije navedeno'}</p>
                             </div>
                         ))
                     ) : <p style={{ color: 'gray' }}>Nema sačuvanih restorana.</p>}
