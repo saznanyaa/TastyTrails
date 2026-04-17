@@ -262,6 +262,29 @@ export default function Profile() {
                 </div>
             </div>
 
+            {/* SAČUVANI RESTORANI SEKCIJA */}
+            {isOwnProfile && (<div className="content-section">
+                <div className="horizontal-divider"></div>
+                <h3 className="section-title">SAČUVANI RESTORANI</h3>
+                <div className="reviews-grid">
+                    {savedRestaurants.length > 0 ? (
+                        savedRestaurants.map((rest) => (
+                            <div key={rest.id || rest.Id} className="review-card saved-card">
+                                <h4>{rest.name}</h4>
+                                <p className="review-cuisine">
+                                    {(!rest.cuisine || rest.cuisine.toLowerCase() === 'unknown')
+                                        ? 'Nije navedeno'
+                                        : rest.cuisine}
+                                </p>
+                                <button className="view-profile-btn" onClick={() => navigate(`/explore`)}>
+                                    Pogledaj
+                                </button>
+                            </div>
+                        ))
+                    ) : <p style={{ color: 'gray' }}>Nema sačuvanih restorana.</p>}
+                </div>
+            </div>)}
+
             {/* RECENZIJE SEKCIJA */}
             <div className="content-section">
                 <div className="horizontal-divider"></div>
@@ -282,29 +305,7 @@ export default function Profile() {
                     ))}
                 </div>
             </div>
-
-            {/* SAČUVANI RESTORANI SEKCIJA */}
-            <div className="content-section">
-                <div className="horizontal-divider"></div>
-                <h3 className="section-title">SAČUVANI RESTORANI</h3>
-                <div className="reviews-grid">
-                    {savedRestaurants.length > 0 ? (
-                        savedRestaurants.map((rest) => (
-                            <div key={rest.id || rest.Id} className="review-card saved-card">
-                                <h4>{rest.name}</h4>
-                                <p className="review-cuisine">
-                                    {(!rest.cuisine || rest.cuisine.toLowerCase() === 'unknown')
-                                        ? 'Nije navedeno'
-                                        : rest.cuisine}
-                                </p>
-                                <button className="view-profile-btn" onClick={() => navigate(`/explore`)}>
-                                    Pogledaj
-                                </button>
-                            </div>
-                        ))
-                    ) : <p style={{ color: 'gray' }}>Nema sačuvanih restorana.</p>}
-                </div>
-            </div>
+            
 
             {/* MODALI */}
             {isEditModalOpen && (
