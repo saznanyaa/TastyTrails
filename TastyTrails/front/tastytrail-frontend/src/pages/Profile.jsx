@@ -220,7 +220,7 @@ export default function Profile() {
                         {profileImage ? <img src={profileImage} className="profile-img-element" alt="Profile" /> : <span style={{ fontSize: '50px' }}>👤</span>}
                     </div>
                     <div className="user-text-container">
-                        <h2 className="username-text">{(user?.username || user?.Username || "KORISNIK").toUpperCase()}</h2>
+                        <h2 className="username-text">{(user?.username || user?.Username || "USER").toUpperCase()}</h2>
                     </div>
                 </div>
 
@@ -228,7 +228,7 @@ export default function Profile() {
                     <div className="stats-row">
                         <div className="stat-item">
                             <strong className="stat-number">{reviews.length}</strong>
-                            <span className="stat-label">RECENZIJE</span>
+                            <span className="stat-label">REVIEWS</span>
                         </div>
                         <div className="stat-item clickable" onClick={() => openFollowModal("followers")}>
                             <strong className="stat-number">{followersCount}</strong>
@@ -248,7 +248,7 @@ export default function Profile() {
 
                 <div className="right-search-area">
                     <div className="search-wrapper">
-                        <input type="text" placeholder="Pretraži..." className="profile-search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+                        <input type="text" placeholder="Search..." className="profile-search-input" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
                         {searchResults.length > 0 && (
                             <div className="search-dropdown">
                                 {searchResults.map((u) => (
@@ -265,7 +265,7 @@ export default function Profile() {
             {/* SAČUVANI RESTORANI SEKCIJA */}
             {isOwnProfile && (<div className="content-section">
                 <div className="horizontal-divider"></div>
-                <h3 className="section-title">SAČUVANI RESTORANI</h3>
+                <h3 className="section-title">SAVED RESTAURANTS</h3>
                 <div className="reviews-grid">
                     {savedRestaurants.length > 0 ? (
                         savedRestaurants.map((rest) => (
@@ -275,17 +275,21 @@ export default function Profile() {
                                 onClick={() => navigate(`/restaurant/${rest.id || rest.Id}`)}
                             >
                                 <h4>{rest.name}</h4>
-                                <p className="review-cuisine">{rest.cuisine || 'Nije navedeno'}</p>
+                                <p className="review-cuisine">
+                                    {(!rest.cuisine || rest.cuisine.toLowerCase() === 'unknown')
+                                        ? 'Not displayed'
+                                        : rest.cuisine}
+                                </p>
                             </div>
                         ))
-                    ) : <p style={{ color: 'gray' }}>Nema sačuvanih restorana.</p>}
+                    ) : <p style={{ color: 'gray' }}>There are no saved restaurants.</p>}
                 </div>
             </div>)}
 
             {/* RECENZIJE SEKCIJA */}
             <div className="content-section">
                 <div className="horizontal-divider"></div>
-                <h3 className="section-title">{isOwnProfile ? "MOJE RECENZIJE" : "RECENZIJE KORISNIKA"}</h3>
+                <h3 className="section-title">{isOwnProfile ? "MY REVIEWS" : "REVIEWS"}</h3>
                 <div className="reviews-grid">
                     {reviews.map((rev) => (
                         <div key={rev.id || rev.Id} className="review-card">
@@ -308,14 +312,14 @@ export default function Profile() {
             {isEditModalOpen && (
                 <div className="modal-overlay">
                     <div className="edit-modal">
-                        <h3>Izmeni recenziju</h3>
-                        <label>Ocena:</label>
+                        <h3>Edit review</h3>
+                        <label>Rating:</label>
                         <input type="number" min="1" max="5" value={currentReview.rating} onChange={(e) => setCurrentReview({ ...currentReview, rating: Number(e.target.value) })} />
-                        <label>Komentar:</label>
+                        <label>Comment:</label>
                         <textarea value={currentReview.comment} onChange={(e) => setCurrentReview({ ...currentReview, comment: e.target.value })} />
                         <div className="modal-buttons">
-                            <button className="save-btn" onClick={handleUpdateReview}>Sačuvaj</button>
-                            <button className="cancel-btn" onClick={() => setIsEditModalOpen(false)}>Otkaži</button>
+                            <button className="save-btn" onClick={handleUpdateReview}>Save</button>
+                            <button className="cancel-btn" onClick={() => setIsEditModalOpen(false)}>Cancel</button>
                         </div>
                     </div>
                 </div>
@@ -330,12 +334,12 @@ export default function Profile() {
                             <button className="close-btn" onClick={() => setShowFollowModal(false)}>&times;</button>
                         </div>
                         <div className="modal-body">
-                            {isModalLoading ? <p>Učitavanje...</p> :
+                            {isModalLoading ? <p>Loading...</p> :
                                 modalUsers.length > 0 ? modalUsers.map(u => (
                                     <div key={u.id || u.Id} className="modal-user-item" onClick={() => { navigate(`/profile/${u.id || u.Id}`); setShowFollowModal(false); }}>
                                         <span>👤 {u.username || u.Username}</span>
                                     </div>
-                                )) : <p>Nema korisnika za prikaz.</p>}
+                                )) : <p>There are no users.</p>}
                         </div>
                     </div>
                 </div>
