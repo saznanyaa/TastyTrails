@@ -56,15 +56,17 @@ Klikom na rezultat pretrage stižemo do profila traženog korisnika, gde nalazim
 ![Follow1](TastyTrails/slike/zapracendokaz.png)
 
 Na profilu ulogovanog korisnika sada može da se vidi da ima 0 pratilaca, ali da prati 1 osobu:
-![PopiFollowers](TastyTrails/slike.popifollowers.png)
+![PopiFollowers](TastyTrails/slike/popifollowers.png)
 ![PopiFollowing](TastyTrails/slike/popifollowing.png)
 
 Pošto je korisnik sada ulogovan, za početak, izgled mape se menja. Ikonice zgrada predstavljaju oznake restorana, ikonice zvezdica predstavljaju oznaku restorana u trendu za dati mesec, dok ikonica sa tri zvezdice označava oznaku preporučenog restorana datom korisniku. Trending se određuje na osnovu angažmana prema restoranima. U obzir se uzima koliko puta je restoran pregledan, kakva mu je srednja ocena, da li raste ili opada sa novim recenzijama, koliko ljudi je sačuvalo dati restoran, i na osnovu tih vrednosti, računa se trending ocena za dati restoran (Cassandra + MongoDB). Preporučeni restorani na osnovu toga da li se korisnicima koje dati korisnik prati dopada određeni restoran, da li ga je ulogovani korisnik već posetio, jer njih ne uzimamo u obzir i na osnovu restorana u trendingu (Neo4j + Cassandra + MongoDB).
+
 ![RecommendedMap](TastyTrails/slike/recommendedrestoranimapa.png)
 
 Klikom na jednu od ikonica restorana na mapi, otvara se popup, koji dozvoljava korisniku više mogućnosti:
 1. Prikaz naziva restorana, prosečne ocene i ukupan broj recenzija
    ![Popup](TastyTrails/slike/restaurantpopup.png)
+
 2. Čuvanje restorana, i njegovo uklanjanje iz liste sačuvanih restorana:
    ![Saved](TastyTrails/slike/sacuvanrestoran.png)
    ![Saved1](TastyTrails/slike/sacuvanrestorandokaz.png)
