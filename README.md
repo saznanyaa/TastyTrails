@@ -66,4 +66,7 @@ Klikom na jednu od ikonica restorana na mapi, otvara se popup, koji dozvoljava k
 1. Prikaz naziva restorana, prosečne ocene i ukupan broj recenzija
    ![Popup](TastyTrails/slike/restaurantpopup.png)
 2. Čuvanje restorana, i njegovo uklanjanje iz liste sačuvanih restorana:
-   ![Saved](TastyTrails/slike/sacuvarestoran.png)
+   ![Saved](TastyTrails/slike/sacuvanrestoran.png)
+   ![Saved1](TastyTrails/slike/sacuvanrestorandokaz.png)
+   ![Saved2](TastyTrails/slike/sacuvanne.png)
+   ![Saved3](TastyTrails/slike/sacuvannedokaz.png)
