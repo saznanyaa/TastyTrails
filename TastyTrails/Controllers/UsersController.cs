@@ -61,6 +61,23 @@ namespace TastyTrails.Controllers
             return Ok(updated);
         }
 
+        [HttpPost("{id}/profileImage")]
+        public async Task<IActionResult> UpdateProfileImage(Guid id, [FromBody] string imageUrl)
+        {
+            var userIdFromToken = GetUserIdFromToken();
+            if (userIdFromToken != id) return Forbid();
+
+            try
+            {
+                await _mongo.UpdateUserProfileImage(id, imageUrl);
+                return Ok(new { message = "Profile image updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { error = ex.Message });
+            }
+        }
+
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(Guid id)
         {

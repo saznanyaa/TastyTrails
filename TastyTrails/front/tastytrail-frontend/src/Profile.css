@@ -555,6 +555,12 @@ body {
     z-index: 9999;
 }
 
+.profile-img-element {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* or contain */
+}
+
 .edit-modal {
     background: white;
     width: 100%;

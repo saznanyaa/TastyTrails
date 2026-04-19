@@ -437,5 +437,12 @@ namespace TastyTrails.Services
                 ProfileImage = u.ProfileImage
             }).ToList();
         }
+
+        public async Task UpdateUserProfileImage(Guid userId, string imageUrl)
+        {
+            var filter = Builders<MongoUser>.Filter.Eq(u => u.Id, userId);
+            var update = Builders<MongoUser>.Update.Set(u => u.ProfileImage, imageUrl);
+            await Users.UpdateOneAsync(filter, update);
+        }
     }
 }

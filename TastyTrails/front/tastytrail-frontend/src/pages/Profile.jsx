@@ -36,6 +36,27 @@ export default function Profile() {
         navigate(`/profile/${targetUserId}`);
     };
 
+    const handleProfileImageChange = async (newImage) => {
+        setProfileImage(newImage);
+        const authToken = localStorage.getItem("authToken");
+        try {
+            const res = await fetch(`http://localhost:5146/api/user/${id}/profileImage`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(newImage)
+            });
+            if (!res.ok) {
+                const errorData = await res.json();
+                console.error("Server error:", errorData);
+            }
+        } catch (err) {
+            console.error("Mrežna greška:", err);
+        }
+    };
+
     // 1. Fetch Podataka - FIX: Sada resetuje state pre svakog novog učitavanja
     useEffect(() => {
         const fetchData = async () => {
@@ -56,6 +77,8 @@ export default function Profile() {
                 if (userRes.ok) {
                     const userData = await userRes.json();
                     setUser(userData);
+                    const img = userData.profileImage || userData.ProfileImage || null;
+                    if (img) setProfileImage(img);
                     const followersList = userData.followers || userData.Followers || [];
                     setFollowersCount(followersList.length);
 
@@ -209,7 +232,11 @@ export default function Profile() {
                 const file = e.target.files[0];
                 if (file) {
                     const reader = new FileReader();
-                    reader.onloadend = () => setProfileImage(reader.result);
+                    reader.onloadend = () => {
+                        const base64String = reader.result;
+                        setProfileImage(base64String);
+                        handleProfileImageChange(base64String);
+                    }
                     reader.readAsDataURL(file);
                 }
             }} />
