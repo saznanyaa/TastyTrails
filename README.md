@@ -64,11 +64,30 @@ Pošto je korisnik sada ulogovan, za početak, izgled mape se menja. Ikonice zgr
 ![RecommendedMap](TastyTrails/slike/recommendedrestoranimapa.png)
 
 Klikom na jednu od ikonica restorana na mapi, otvara se popup, koji dozvoljava korisniku više mogućnosti:
-### Prikaz naziva restorana, prosečne ocene i ukupan broj recenzija
-   ![Popup](TastyTrails/slike/restaurantpopup.png)
+#### Prikaz naziva restorana, prosečne ocene i ukupan broj recenzija
+![Popup](TastyTrails/slike/restaurantpopup.png)
 
-### Čuvanje restorana, i njegovo uklanjanje iz liste sačuvanih restorana:
-   ![Saved](TastyTrails/slike/sacuvanrestoran.png)
-   ![Saved1](TastyTrails/slike/sacuvanrestorandokaz.png)
-   ![Saved2](TastyTrails/slike/sacuvanne.png)
-   ![Saved3](TastyTrails/slike/sacuvannedokaz.png)
+#### Čuvanje restorana, i njegovo uklanjanje iz liste sačuvanih restorana:
+![Saved](TastyTrails/slike/sacuvanrestoran.png)
+![Saved1](TastyTrails/slike/sacuvanrestorandokaz.png)
+![Saved2](TastyTrails/slike/sacuvanne.png)
+![Saved3](TastyTrails/slike/sacuvannedokaz.png)
+
+#### Prikaz detalja o restoranu, pritiskom na View details:
+![Details1](TastyTrails/slike/viewdetails1.png)
+![Details2](TastyTrails/slike/viewdetails2.png)
+Popularity graf predstavlja popularnost određenog restorana na nedeljnom nivou (Cassandra), dok Recommended for You sekcija predstavlja listu preporučenih restorana, sličnih datom restoranu (Neo4j). Reviews sekcija predstavlja listu recenzija za dati restoran, dok je Location oznaka datog restorana na mapi. Pritiskom na jedan od restorana navedenih u Recommended for You vodi do ovakve stranice, za dati restoran. Takođe, do ove stranice vodi i klik na sačuvani restoran iz liste sačuvanh restorana na profilu korisnika.
+
+#### Pregled recenzija za dati restoran, ostavljenih u poslednja 3 dana (Cassandra):
+![RecentReviews](TastyTrails/slike/popinreview.png)
+
+#### Dodavanje recenzije za dati restoran (Cassandra + MongoDB + Neo4j):
+![AddReview1](TastyTrails/slike/dodavanjerecenzije.png)
+Na slici iznad ove je prikazana data recenzija u odeljku Recent reviews, a ovde je prikazana na profilu:
+![AddReview2](TastyTrails/slike/popirecenzije.png)
+Pritiskom na dugme Edit, omogućava se izmena date recenzije, dok se pritiskom na dugme Delete omogućava brisanje date recenzije.
+![EditReview](TastyTrails/slike/izmenarecenzije.png)
+![EditReview1](TastyTrails/slike/izmenjenarecenzija.png)
+![DeleteReview](TastyTrails/slike/brisanjerecenzije.png)
+![DeleteReview](TastyTrail/slike/obrisanarecenzija.png)
+(ova slika predstavlja izgled profila nakon svih obrisanih recenzija)
