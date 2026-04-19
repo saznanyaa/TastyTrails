@@ -1,0 +1,110 @@
+# TastyTrail
+## Pregled projekta
+TastyTrail je web aplikacija za istraživanje popularnih restorana, koja omogućava korisnicima da pretražuju restorane, prate njihovu popularnost, ostavljaju recenzije, i čuvaju omiljene restorane.
+Sistem koristi različite baze podataka, radi optimizacije različitih delova aplikacije, i omogućavanja bržih i skalabilnijih upita.
+## Tehnologije
+Frontend: React
+Backend: ASP.NET Core Web API
+Baze podataka: 
+- MongoDB (glavni podaci o korisnicima, restoranima i recenzijama)
+- Cassandra (vremenski bazirani podaci vezani za istoriju i nove upite)
+- Neo4j (relacije i preporuke)
+## Funkcionalnosti
+-	registracija i prijava korisnika
+- praćenje i pregled drugih korisnika
+- prikaz i pregled restorana
+- ostavljanje ocena i komentara
+- čuvanje restorana
+- prikaz popularnih restorana
+- prikaz preporučenih restorana, na osnovu različitih kriterijuma
+## Pokretanje projekta
+1. Backend:
+   - otvoriti solution u VS Code-u, ili Visual Studio-u
+   - proveriti konekcione stringove u appsettings.Development.json-u (ili appsettings.json-u)
+   - pokrenuti baze podataka
+   - pokretanje projekta pomoću: dotnet run
+2. Frontend:
+   - pozicionirati se u tastytrail-frontend folder u cmd-u
+   - uneti komande: npm install, zatim npm run dev
+## Testiranje
+Testiranje API-a je odrađeno pomoću Swagger-a i Postman-a, frontend funkcionalnosti su testirane ručno, sa proverom podataka direktno u bazama podataka.
+## Uputstvo za korišćenje
+Aplikacija se pokreće na Home stranici, koja zahteva odabir jednog od ponuđenih gradova.
+![Home Page](TastyTrails/slike/homepage.png)
+
+Klik na jednu od ovih kartica, vodi korisnika na explore/city stranu, koja prikazuje restorane koji se nalaze u bazama podataka za određeni grad.
+Najpre se proverava da li u bazi podataka postoje restorani za dati grad (Cassandra), i ukoliko ne, restorani se pribavljaju pomoću OpenStreetMap Overpass API-a, za dati grad. Postoji mogućnost da su Overpass serveri zauzeti u određenom trenutku, ali u većini slučajeva podaci o restoranima se pribavljaju, i upisuju sve tri baze podataka.
+Izgled stranice odmah nakon što su restorani upisani u baze, i za već postojeće restorane (novi restorani su u Nišu, dok su postojeći u Beogradu):
+![Map1](TastyTrails/slike/tekpovucenirestorani.png)
+![Map2](TastyTrails/slike/korisniknijeprijavljenmapa.png)
+
+Može se primetiti da korisnik još uvek nije prijavljen. Ukoliko korisnik nema svoj nalog, omogućena mu je registracija, a ukoliko ima, prijava. Dalje je prikazan i izgled tek napravljenog korisničkog profila, koji prikazuje korisničko ime, sliku (koja može da se doda), broj recenzija korisnika, broj pratilaca i broj profila koje on sam prati, mogućnost pretrage korisničkih profila, kao i pregled sačuvanih restorana i recenzija datog korisnika.
+![Register](TastyTrails/slike/register.png)
+![Login](TastyTrails/slike/login.png)
+![PrazanProfil](TastyTrails/slike/prazanprofil.png)
+
+Klikom na sliku avatara, omogućeno je dodavanje i promena profilne slike korisnika.
+![Profilna1](TastyTrails/slike/addprofilepicture.png)
+![Profilna2](TastyTrails/slike/profilepictureadded.png)
+
+Klikom na Pretraži..., omogućena je pretraga korisnika:
+![PretraziKorisnike](TastyTrails/slike/pretrazikorisnike.png)
+
+Klikom na rezultat pretrage stižemo do profila traženog korisnika, gde nalazimo opciju follow (ili unfollow), i možemo videti recenzije koje je dati korisnik ostavio. Klikom na dugme follow (Neo4j), vrši se praćenje korisnika, a unfollow, se poništava ta veza.
+![Bubi](TastyTrails/slike/bubi.png)
+![Follow](TastyTrails/slike/zapracenkorisnik.png)
+![Follow1](TastyTrails/slike/zapracendokaz.png)
+
+Na profilu ulogovanog korisnika sada može da se vidi da ima 0 pratilaca, ali da prati 1 osobu:
+![PopiFollowers](TastyTrails/slike/popifollowers.png)
+![PopiFollowing](TastyTrails/slike/popifollowing.png)
+
+Pošto je korisnik sada ulogovan, za početak, izgled mape se menja. Ikonice zgrada predstavljaju oznake restorana, ikonice zvezdica predstavljaju oznaku restorana u trendu za dati mesec, dok ikonica sa tri zvezdice označava oznaku preporučenog restorana datom korisniku. Trending se određuje na osnovu angažmana prema restoranima. U obzir se uzima koliko puta je restoran pregledan, kakva mu je srednja ocena, da li raste ili opada sa novim recenzijama, koliko ljudi je sačuvalo dati restoran, i na osnovu tih vrednosti, računa se trending ocena za dati restoran (Cassandra + MongoDB). Preporučeni restorani na osnovu toga da li se korisnicima koje dati korisnik prati dopada određeni restoran, da li ga je ulogovani korisnik već posetio, jer njih ne uzimamo u obzir i na osnovu restorana u trendingu (Neo4j + Cassandra + MongoDB).
+
+![RecommendedMap](TastyTrails/slike/recommendedrestoranimapa.png)
+
+Klikom na jednu od ikonica restorana na mapi, otvara se popup, koji dozvoljava korisniku više mogućnosti:
+#### Prikaz naziva restorana, prosečne ocene i ukupan broj recenzija
+![Popup](TastyTrails/slike/restaurantpopup.png)
+
+#### Čuvanje restorana, i njegovo uklanjanje iz liste sačuvanih restorana:
+![Saved](TastyTrails/slike/sacuvanrestoran.png)
+![Saved1](TastyTrails/slike/sacuvanrestorandokaz.png)
+![Saved2](TastyTrails/slike/sacuvanne.png)
+![Saved3](TastyTrails/slike/sacuvannedokaz.png)
+
+#### Prikaz detalja o restoranu, pritiskom na View details:
+![Details1](TastyTrails/slike/viewdetails1.png)
+![Details2](TastyTrails/slike/viewdetails2.png)
+Popularity graf predstavlja popularnost određenog restorana na nedeljnom nivou (Cassandra), dok Recommended for You sekcija predstavlja listu preporučenih restorana, sličnih datom restoranu (Neo4j). Reviews sekcija predstavlja listu recenzija za dati restoran, dok je Location oznaka datog restorana na mapi. Pritiskom na jedan od restorana navedenih u Recommended for You vodi do ovakve stranice, za dati restoran. Takođe, do ove stranice vodi i klik na sačuvani restoran iz liste sačuvanh restorana na profilu korisnika.
+
+#### Pregled recenzija za dati restoran, ostavljenih u poslednja 3 dana (Cassandra):
+![RecentReviews](TastyTrails/slike/popinreview.png)
+
+#### Dodavanje recenzije za dati restoran (Cassandra + MongoDB + Neo4j):
+![AddReview1](TastyTrails/slike/dodavanjerecenzije.png)
+##### Na slici iznad ove je prikazana data recenzija u odeljku Recent reviews, a ovde je prikazana na profilu:
+![AddReview2](TastyTrails/slike/popirecenzije.png)
+#### Pritiskom na dugme Edit, omogućava se izmena date recenzije, dok se pritiskom na dugme Delete omogućava brisanje date recenzije.
+![EditReview](TastyTrails/slike/izmenarecenzije.png)
+![EditReview1](TastyTrails/slike/izmenjenarecenzija.png)
+![DeleteReview](TastyTrails/slike/brisanjerecenzije.png)
+![DeleteReview1](TastyTrails/slike/obrisanarecenzija.png)
+#### (ova slika predstavlja izgled profila nakon svih obrisanih recenzija)
+## Struktura podataka u bazama
+Kako se Cassandra tabele kreiraju imajući u vidu upit koji treba da izvrše, za korisnika, najznačajnije je zapamtiti id (uuid), ali se pamte i username, email i role. Restorani su zapamćeni imajući u vidu gradove i popularnost, gde su popularnost i id clustering keys, a grad partition key. Takođe, postoje tabele koje beleže kada je retoran pregledan (uređenje po id-u, viewed_at i userId-u), koje beleže mesečni i nedeljni trending, tabele koje beleže akcije ocenjivanja restorana, i sve one su priložene u .txt fajlu s imenom „cassandra tabele.txt“.
+Neo4j beleži korisnike kao čvorove, koji sadrže id i username. Restorani su zapamćeni kao čvorovi koji sadrže id, vrstu hrane koju služe, lokaciju (grad) i naziv restorana. Između čvorova se formiraju veze:
+- DISLIKES: kada korisnik postavi ocenu restorana manju od 3
+- LIKES: kada korisnik postavi ocenu restorana veću ili jednaku 3
+- FOLLOWS: pri zapraćivanju drugog korisnika; briše se pri unfollow akciji
+- RATED: kada korisnik ostavi receziju za određeni rezultat, pri čemu se pamti i ocena koju je ostavio kao težina grane (score)
+MongoDB sadrži osnovne podatke o korisnicima, restoranima i recenzijama. Kod korisnika pamti id, name, username, email, passwordHash, profileImage, listu sačuvanih restorana (id), listu profila (id) koje prati, listu profila (id) koji njega prate i createdAt.
+Kod restorana se pamti id, name, coord (unutar se nalaze lat i lng), cuisine, averageRating, totalReviews, trendingScore i sourceId (iz Overpass baze).
+Kod recenzija se pamti id, restaurantId, userId, rating, comment, createdAt i updatedAt.
+## Napomene
+Ukoliko nije navedeno, baza podataka iz koje se prbavljaju podaci je u većini slučajeva MongoDB, ili kombinacija MongoDB-a i Cassandra-e ili Neo4j-a, ili sve 3.
+Neophodno je pokrenuti sve baze podataka pre pokretanja backend-a, ili će se javiti Network Error.
+Aplikacija je delimično na engleskom, delimično na srpskom, na slikama, što je ispravljeno nakandno.
+## Autori
+Anja Janković
+David Stanojević
