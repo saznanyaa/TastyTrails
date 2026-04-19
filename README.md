@@ -89,5 +89,22 @@ Popularity graf predstavlja popularnost određenog restorana na nedeljnom nivou 
 ![EditReview](TastyTrails/slike/izmenarecenzije.png)
 ![EditReview1](TastyTrails/slike/izmenjenarecenzija.png)
 ![DeleteReview](TastyTrails/slike/brisanjerecenzije.png)
-![DeleteReview1](TastyTrail/slike/obrisanarecenzija.png)
+![DeleteReview1](TastyTrails/slike/obrisanarecenzija.png)
 #### (ova slika predstavlja izgled profila nakon svih obrisanih recenzija)
+## Struktura podataka u bazama
+Kako se Cassandra tabele kreiraju imajući u vidu upit koji treba da izvrše, za korisnika, najznačajnije je zapamtiti id (uuid), ali se pamte i username, email i role. Restorani su zapamćeni imajući u vidu gradove i popularnost, gde su popularnost i id clustering keys, a grad partition key. Takođe, postoje tabele koje beleže kada je retoran pregledan (uređenje po id-u, viewed_at i userId-u), koje beleže mesečni i nedeljni trending, tabele koje beleže akcije ocenjivanja restorana, i sve one su priložene u .txt fajlu s imenom „cassandra tabele.txt“.
+Neo4j beleži korisnike kao čvorove, koji sadrže id i username. Restorani su zapamćeni kao čvorovi koji sadrže id, vrstu hrane koju služe, lokaciju (grad) i naziv restorana. Između čvorova se formiraju veze:
+- DISLIKES: kada korisnik postavi ocenu restorana manju od 3
+- LIKES: kada korisnik postavi ocenu restorana veću ili jednaku 3
+- FOLLOWS: pri zapraćivanju drugog korisnika; briše se pri unfollow akciji
+- RATED: kada korisnik ostavi receziju za određeni rezultat, pri čemu se pamti i ocena koju je ostavio kao težina grane (score)
+MongoDB sadrži osnovne podatke o korisnicima, restoranima i recenzijama. Kod korisnika pamti id, name, username, email, passwordHash, profileImage, listu sačuvanih restorana (id), listu profila (id) koje prati, listu profila (id) koji njega prate i createdAt.
+Kod restorana se pamti id, name, coord (unutar se nalaze lat i lng), cuisine, averageRating, totalReviews, trendingScore i sourceId (iz Overpass baze).
+Kod recenzija se pamti id, restaurantId, userId, rating, comment, createdAt i updatedAt.
+## Napomene
+Ukoliko nije navedeno, baza podataka iz koje se prbavljaju podaci je u većini slučajeva MongoDB, ili kombinacija MongoDB-a i Cassandra-e ili Neo4j-a, ili sve 3.
+Neophodno je pokrenuti sve baze podataka pre pokretanja backend-a, ili će se javiti Network Error.
+Aplikacija je delimično na engleskom, delimično na srpskom, na slikama, što je ispravljeno nakandno.
+## Autori
+Anja Janković
+David Stanojević
