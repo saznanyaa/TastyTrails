@@ -31,3 +31,8 @@ Testiranje API-a je odrađeno pomoću Swagger-a i Postman-a, frontend funkcional
 ## Uputstvo za korišćenje
 Aplikacija se pokreće na Home stranici, koja zahteva odabir jednog od ponuđenih gradova.
 ![Home Page](TastyTrails/slike/homepage.png)
+Klik na jednu od ovih kartica, vodi korisnika na explore/city stranu, koja prikazuje restorane koji se nalaze u bazama podataka za određeni grad.
+Najpre se proverava da li u bazi podataka postoje restorani za dati grad (Cassandra), i ukoliko ne, restorani se pribavljaju pomoću OpenStreetMap Overpass API-a, za dati grad. Postoji mogućnost da su Overpass serveri zauzeti u određenom trenutku, ali u većini slučajeva podaci o restoranima se pribavljaju, i upisuju sve tri baze podataka.
+Izgled stranice odmah nakon što su restorani upisani u baze, i za već postojeće restorane (novi restorani su u Nišu, dok su postojeći u Beogradu):
+![Map1](TastyTrails/slike/tekpovucenirestorani.png)
+![Map2](TastyTrails/slike/recommendedrestoranimapa.png)
