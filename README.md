@@ -36,3 +36,16 @@ Najpre se proverava da li u bazi podataka postoje restorani za dati grad (Cassan
 Izgled stranice odmah nakon što su restorani upisani u baze, i za već postojeće restorane (novi restorani su u Nišu, dok su postojeći u Beogradu):
 ![Map1](TastyTrails/slike/tekpovucenirestorani.png)
 ![Map2](TastyTrails/slike/korisniknijeprijavljenmapa.png)
+Može se primetiti da korisnik još uvek nije prijavljen. Ukoliko korisnik nema svoj nalog, omogućena mu je registracija, a ukoliko ima, prijava. Dalje je prikazan i izgled tek napravljenog korisničkog profila, koji prikazuje korisničko ime, sliku (koja može da se doda), broj recenzija korisnika, broj pratilaca i broj profila koje on sam prati, mogućnost pretrage korisničkih profila, kao i pregled sačuvanih restorana i recenzija datog korisnika.
+![Register](TastyTrails/slike/register.png)
+![Login](TastyTrails/slike/login.png)
+![PrazanProfil](TastyTrails/slike/prazanprofil.png)
+Klikom na sliku avatara, omogućeno je dodavanje i promena profilne slike korisnika.
+![Profilna1](TastyTrails/slike/addprofilepicture.png)
+![Profilna2](TastyTrails/slike/profilepictureadded.png)
+Klikom na Pretraži..., omogućena je pretraga korisnika:
+![PretraziKorisnike](TastyTrails/slike/pretrazikorinike.png)
+Klikom na rezultat pretrage stižemo do profila traženog korisnika, gde nalazimo opciju follow (ili unfollow), i možemo videti recenzije koje je dati korisnik ostavio. Klikom na dugme follow (Neo4j), vrši se praćenje korisnika, a unfollow, se poništava ta veza.
+![Bubi](TastyTrails/slike/bubi.png)
+![Follow](TastyTrails/slike/zapracenkorisnik.png)
+![Follow1](TastyTrails/slike/zapracendokaz.png)
