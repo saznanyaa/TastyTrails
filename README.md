@@ -9,3 +9,20 @@ Baze podataka:
 - MongoDB (glavni podaci o korisnicima, restoranima i recenzijama)
 - Cassandra (vremenski bazirani podaci vezani za istoriju i nove upite)
 - Neo4j (relacije i preporuke)
+## Funkcionalnosti
+-	registracija i prijava korisnika
+- praćenje i pregled drugih korisnika
+- prikaz i pregled restorana
+- ostavljanje ocena i komentara
+- čuvanje restorana
+- prikaz popularnih restorana
+- prikaz preporučenih restorana, na osnovu različitih kriterijuma
+## Pokretanje projekta
+1. Backend:
+   - otvoriti solution u VS Code-u, ili Visual Studio-u
+   - proveriti konekcione stringove u appsettings.Development.json-u (ili appsettings.json-u)
+   - pokrenuti baze podataka
+   - pokretanje projekta pomoću: dotnet run
+2. Frontend:
+   - pozicionirati se u tastytrail-frontend folder u cmd-u
+   - uneti komande: npm install, zatim npm run dev
