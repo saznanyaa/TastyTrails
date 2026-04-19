@@ -44,7 +44,7 @@ Klikom na sliku avatara, omogućeno je dodavanje i promena profilne slike korisn
 ![Profilna1](TastyTrails/slike/addprofilepicture.png)
 ![Profilna2](TastyTrails/slike/profilepictureadded.png)
 Klikom na Pretraži..., omogućena je pretraga korisnika:
-![PretraziKorisnike](TastyTrails/slike/pretrazikorinike.png)
+![PretraziKorisnike](TastyTrails/slike/pretrazikorisnike.png)
 Klikom na rezultat pretrage stižemo do profila traženog korisnika, gde nalazimo opciju follow (ili unfollow), i možemo videti recenzije koje je dati korisnik ostavio. Klikom na dugme follow (Neo4j), vrši se praćenje korisnika, a unfollow, se poništava ta veza.
 ![Bubi](TastyTrails/slike/bubi.png)
 ![Follow](TastyTrails/slike/zapracenkorisnik.png)
