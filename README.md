@@ -35,4 +35,4 @@ Klik na jednu od ovih kartica, vodi korisnika na explore/city stranu, koja prika
 Najpre se proverava da li u bazi podataka postoje restorani za dati grad (Cassandra), i ukoliko ne, restorani se pribavljaju pomoću OpenStreetMap Overpass API-a, za dati grad. Postoji mogućnost da su Overpass serveri zauzeti u određenom trenutku, ali u većini slučajeva podaci o restoranima se pribavljaju, i upisuju sve tri baze podataka.
 Izgled stranice odmah nakon što su restorani upisani u baze, i za već postojeće restorane (novi restorani su u Nišu, dok su postojeći u Beogradu):
 ![Map1](TastyTrails/slike/tekpovucenirestorani.png)
-![Map2](TastyTrails/slike/recommendedrestoranimapa.png)
+![Map2](TastyTrails/slike/korisniknijeprijavljenmapa.png)
