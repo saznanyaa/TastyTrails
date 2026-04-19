@@ -64,10 +64,10 @@ Pošto je korisnik sada ulogovan, za početak, izgled mape se menja. Ikonice zgr
 ![RecommendedMap](TastyTrails/slike/recommendedrestoranimapa.png)
 
 Klikom na jednu od ikonica restorana na mapi, otvara se popup, koji dozvoljava korisniku više mogućnosti:
-1. Prikaz naziva restorana, prosečne ocene i ukupan broj recenzija
+### Prikaz naziva restorana, prosečne ocene i ukupan broj recenzija
    ![Popup](TastyTrails/slike/restaurantpopup.png)
 
-2. Čuvanje restorana, i njegovo uklanjanje iz liste sačuvanih restorana:
+### Čuvanje restorana, i njegovo uklanjanje iz liste sačuvanih restorana:
    ![Saved](TastyTrails/slike/sacuvanrestoran.png)
    ![Saved1](TastyTrails/slike/sacuvanrestorandokaz.png)
    ![Saved2](TastyTrails/slike/sacuvanne.png)
