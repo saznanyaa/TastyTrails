@@ -83,11 +83,11 @@ Popularity graf predstavlja popularnost određenog restorana na nedeljnom nivou 
 
 #### Dodavanje recenzije za dati restoran (Cassandra + MongoDB + Neo4j):
 ![AddReview1](TastyTrails/slike/dodavanjerecenzije.png)
-Na slici iznad ove je prikazana data recenzija u odeljku Recent reviews, a ovde je prikazana na profilu:
+##### Na slici iznad ove je prikazana data recenzija u odeljku Recent reviews, a ovde je prikazana na profilu:
 ![AddReview2](TastyTrails/slike/popirecenzije.png)
-Pritiskom na dugme Edit, omogućava se izmena date recenzije, dok se pritiskom na dugme Delete omogućava brisanje date recenzije.
+#### Pritiskom na dugme Edit, omogućava se izmena date recenzije, dok se pritiskom na dugme Delete omogućava brisanje date recenzije.
 ![EditReview](TastyTrails/slike/izmenarecenzije.png)
 ![EditReview1](TastyTrails/slike/izmenjenarecenzija.png)
 ![DeleteReview](TastyTrails/slike/brisanjerecenzije.png)
-![DeleteReview](TastyTrail/slike/obrisanarecenzija.png)
-(ova slika predstavlja izgled profila nakon svih obrisanih recenzija)
+![DeleteReview1](TastyTrail/slike/obrisanarecenzija.png)
+#### (ova slika predstavlja izgled profila nakon svih obrisanih recenzija)
