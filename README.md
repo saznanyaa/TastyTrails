@@ -26,3 +26,8 @@ Baze podataka:
 2. Frontend:
    - pozicionirati se u tastytrail-frontend folder u cmd-u
    - uneti komande: npm install, zatim npm run dev
+## Testiranje
+Testiranje API-a je odrađeno pomoću Swagger-a i Postman-a, frontend funkcionalnosti su testirane ručno, sa proverom podataka direktno u bazama podataka.
+## Uputstvo za korišćenje
+Aplikacija se pokreće na Home stranici, koja zahteva odabir jednog od ponuđenih gradova.
+![Home Page](slike/homepage.png)
