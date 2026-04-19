@@ -39,10 +39,10 @@ export default function Login() {
                     window.location.reload();
                 } else {
                     console.error("ID not found:", data);
-                    alert("Server error: no user ID.");
+                    //alert("Server error: no user ID.");
                 }
             } else {
-                alert("Invalid email or password.");
+                //alert("Invalid email or password.");
             }
         } catch (err) {
             console.error(err);

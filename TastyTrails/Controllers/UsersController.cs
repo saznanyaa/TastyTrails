@@ -49,18 +49,6 @@ namespace TastyTrails.Controllers
             }
         }
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateUsernameOrEmail(Guid id, UpdateDTO dto)
-        {
-            var userIdFromToken = GetUserIdFromToken();
-            if(userIdFromToken != id) return Forbid();
-            
-            var updated = await _mongo.UpdateUsernameOrEmail(id, dto);
-            if(!updated) return NotFound();
-
-            return Ok(updated);
-        }
-
         [HttpPost("{id}/profileImage")]
         public async Task<IActionResult> UpdateProfileImage(Guid id, [FromBody] string imageUrl)
         {
@@ -76,19 +64,6 @@ namespace TastyTrails.Controllers
             {
                 return StatusCode(500, new { error = ex.Message });
             }
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteUser(Guid id)
-        {
-            var userIdFromToken = GetUserIdFromToken();
-            if(userIdFromToken != id) return Forbid();
-
-            var deleted = await _mongo.DeleteUser(id);
-
-            if (!deleted) return NotFound();
-
-            return NoContent();
         }
 
 //---saved restaurants--------------------------------------------------------------------------------
@@ -158,54 +133,6 @@ namespace TastyTrails.Controllers
             }
         }
 
-//---visited restaurants--------------------------------------------------------------------------------
-        [HttpPost("{id}/visited/{restaurantId}")]
-        public async Task<IActionResult> PostVisitedRestaurant(Guid id, Guid restaurantId)
-        {
-            var userIdFromToken = GetUserIdFromToken();
-            if (userIdFromToken != id) return Forbid();
-
-            var rest = await _cassandra.GetCityAndCuisine(restaurantId);
-
-            try
-            {
-                var result = await _mongo.PostUserVisitedRestaurant(id, restaurantId);
-
-                var visited = new CassandraRestaurantCheckins
-                {
-                    RestaurantId = restaurantId,
-                    CheckedInAt = DateTime.UtcNow,
-                    UserId = id
-                };
-
-                await _cassandra.PostRestaurantCheckin(visited);
-                await _cassandra.IncreaseTrending(rest.City, rest.Cuisine, restaurantId, 7);
-
-                return Ok(result);
-            }
-            catch
-            {
-                return NotFound();
-            }
-        }
-
-//if recently viewed gets imlemented
-        [HttpGet("{id}/visited")]
-        public async Task<IActionResult> GetVisitedRestaurants(Guid id)
-        {
-            var userIdFromToken = GetUserIdFromToken();
-            if (userIdFromToken != id) return Forbid();
-
-            try
-            {
-                var restaurants = await _mongo.GetUserVisitedRestaurants(id);
-                return Ok(restaurants);
-            }
-            catch
-            {
-                return NotFound();
-            }
-        }
 //---follow/unfollow--------------------------------------------------------------------------------
         [HttpPost("follow/{targetId}")]
         public async Task<IActionResult> Follow([FromRoute] Guid targetId)
@@ -368,12 +295,9 @@ namespace TastyTrails.Controllers
             }
         }
 
-       
-
         [HttpGet("relations/{userId}/{type}")]
         public async Task<IActionResult> GetRelations(Guid userId, string type)
         {
-            // Validacija tipa (opciono, ali dobra praksa)
             if (type.ToLower() != "followers" && type.ToLower() != "following")
                 return BadRequest("Tip mora biti 'followers' ili 'following'.");
 

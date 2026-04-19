@@ -70,7 +70,7 @@ namespace TastyTrails.Services
                     Console.WriteLine("Overpass returned non-JSON response:");
                     Console.WriteLine(json);
 
-                    return new List<SeedRestaurant>(); // don't crash
+                    return new List<SeedRestaurant>();
                 }
 
                 var data = JObject.Parse(json);

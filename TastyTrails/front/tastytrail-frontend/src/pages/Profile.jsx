@@ -25,7 +25,6 @@ export default function Profile() {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [currentReview, setCurrentReview] = useState(null);
 
-    // Follow Modal State
     const [showFollowModal, setShowFollowModal] = useState(false);
     const [modalTitle, setModalTitle] = useState("");
     const [modalUsers, setModalUsers] = useState([]);
@@ -57,7 +56,6 @@ export default function Profile() {
         }
     };
 
-    // 1. Fetch Podataka - FIX: Sada resetuje state pre svakog novog učitavanja
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
@@ -69,7 +67,6 @@ export default function Profile() {
             const currentLoggedInId = localStorage.getItem("userId");
 
             try {
-                // User info
                 const userRes = await fetch(`http://localhost:5146/api/get/user/${id}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
@@ -90,7 +87,6 @@ export default function Profile() {
                     }
                 }
 
-                // Reviews
                 const reviewsRes = await fetch(`http://localhost:5146/api/get/reviews/${id}`, {
                     headers: { 'Authorization': `Bearer ${authToken}` }
                 });
@@ -99,7 +95,6 @@ export default function Profile() {
                     setReviews(reviewsData || []);
                 }
 
-                // Saved Restaurants - Samo za vlasnika
                 if (isOwnProfile) {
                     const savedRes = await fetch(`http://localhost:5146/api/user/${id}/saved`, {
                         headers: { 'Authorization': `Bearer ${authToken}` }
@@ -119,7 +114,6 @@ export default function Profile() {
         if (id) fetchData();
     }, [id, isOwnProfile]);
 
-    // Search Logic (Debounce)
     useEffect(() => {
         const delayDebounceFn = setTimeout(async () => {
             if (searchTerm.trim().length > 1) {
@@ -145,14 +139,13 @@ export default function Profile() {
             return;
         }
 
-        // Određujemo metodu na osnovu akcije
         const method = isFollowing ? 'DELETE' : 'POST';
         const endpoint = isFollowing ? 'unfollow' : 'follow';
         const url = `http://localhost:5146/api/user/${endpoint}/${id}`;
 
         try {
             const res = await fetch(url, {
-                method: method, // OVO JE KLJUČNA IZMENA
+                method: method,
                 headers: {
                     'Authorization': `Bearer ${authToken}`,
                     'Content-Type': 'application/json'
@@ -289,7 +282,6 @@ export default function Profile() {
                 </div>
             </div>
 
-            {/* SAČUVANI RESTORANI SEKCIJA */}
             {isOwnProfile && (<div className="content-section">
                 <div className="horizontal-divider"></div>
                 <h3 className="section-title">SAVED RESTAURANTS</h3>
@@ -313,7 +305,6 @@ export default function Profile() {
                 </div>
             </div>)}
 
-            {/* RECENZIJE SEKCIJA */}
             <div className="content-section">
                 <div className="horizontal-divider"></div>
                 <h3 className="section-title">{isOwnProfile ? "MY REVIEWS" : "REVIEWS"}</h3>
@@ -334,8 +325,6 @@ export default function Profile() {
                 </div>
             </div>
             
-
-            {/* MODALI */}
             {isEditModalOpen && (
                 <div className="modal-overlay">
                     <div className="edit-modal">
@@ -352,7 +341,6 @@ export default function Profile() {
                 </div>
             )}
 
-            {/* FOLLOWERS / FOLLOWING MODAL */}
             {showFollowModal && (
                 <div className="modal-overlay" onClick={() => setShowFollowModal(false)}>
                     <div className="follow-modal" onClick={e => e.stopPropagation()}>

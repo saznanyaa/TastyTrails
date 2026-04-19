@@ -241,7 +241,6 @@ export default function Explore() {
                     padding: "12px"
                     }}
                 >
-                    {/* Save button */}
                     <button
                     onClick={() => toggleSave(r.id)}
                     style={{
@@ -266,7 +265,6 @@ export default function Explore() {
                     />
                     </button>
 
-                    {/* Header */}
                     <div style={{ marginBottom: "8px" }}>
                     <h4 style={{ margin: 0, fontSize: "16px" }}>{r.name}</h4>
                     <p style={{ margin: "4px 0", fontSize: "13px", color: "#666" }}>
@@ -274,7 +272,6 @@ export default function Explore() {
                     </p>
                     </div>
 
-                    {/* View details button */}
                     <div
                     onClick={() =>
                         navigate(`/restaurant/${r.id}`, {

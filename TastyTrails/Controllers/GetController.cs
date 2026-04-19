@@ -22,7 +22,7 @@ namespace TastyTrails.Controllers
             _neo4jService = neo4j;
         }
 
-        //trending resturants
+        //trending resturants by city
         [HttpGet("restaurants/trending/{city}")]
         public async Task<IActionResult> GetTrendingRestaurants(string city)
         {
@@ -65,6 +65,7 @@ namespace TastyTrails.Controllers
             return Ok(result);
         }
 
+        //similar restaurants to the selected one
         [HttpGet("similar/{id}")]
         public async Task<IActionResult> GetSimilarRestaurants(Guid id)
         {
@@ -92,6 +93,7 @@ namespace TastyTrails.Controllers
             return Ok(result);
         }
 
+        //weekly popularity
         [HttpGet("{id}/analytics/weekly")]
         public async Task<IActionResult> GetWeeklyAnalytics(Guid id)
         {
@@ -125,6 +127,7 @@ namespace TastyTrails.Controllers
             return Ok(analytics);
         }
 
+        //restaurants by city
         [HttpGet("restaurants/bycity/{city}")]
         public async Task<IActionResult> GetRestaurantsByCity(string city) 
         {
@@ -196,65 +199,11 @@ namespace TastyTrails.Controllers
             return Ok(reviews);
         }
 
-        //to show most recent reviews in the popup
-        [HttpGet("restaurants/{id}/reviewsfromto")]
-        public async Task<IActionResult> GetRestaurantReviewsToFrom(Guid id, [FromQuery]DateTime to, [FromQuery]DateTime ffrom)
-        {
-            to = to.ToUniversalTime();
-            ffrom = ffrom.ToUniversalTime();
-            var reviews = await _cassandra.GetRestaurantReviewsFromTo(id, ffrom, to);
-            return Ok(reviews);
-        }
-
         [HttpGet("restaurants/{id}/reviewscount")]
         public async Task<IActionResult> GetRestaurantReviewsCount(Guid id)
         {
             var count = await _cassandra.GetRestaurantReviewCount(id);
             return Ok(new {RestaurantId = id, ReviewCount = count});
-        }
-
-        //---restaurant_checkins------------------------------------------------------------
-        [HttpGet("restaurants/{id}/checkins")]
-        public async Task<IActionResult> GetRestaurantCheckins(Guid id)
-        {
-            var checkins = await _cassandra.GetRestaurantCheckins(id);
-    
-            return Ok(checkins);
-        }
-
-        [HttpGet("restaurants/{id}/checkinsfromto")]
-        public async Task<IActionResult> GetRestaurantCheckinsToFrom(Guid id, [FromQuery]DateTime to, [FromQuery]DateTime ffrom)
-        {
-            to = to.ToUniversalTime();
-            ffrom = ffrom.ToUniversalTime();
-            var checkins = await _cassandra.GetRestaurantCheckinsFromTo(id, ffrom, to);
-            return Ok(checkins);
-        }
-
-        [HttpGet("restaurants/{id}/checkinscount")]
-        public async Task<IActionResult> GetRestaurantCheckinsCount(Guid id)
-        {
-            var count = await _cassandra.GetRestaurantCheckinsCount(id);
-            return Ok(new {RestaurantId = id, CheckinsCount = count});
-        }
-
-        //---restaurant_rating_summary-------------------------------------------------------
-        [HttpGet("restaurants/{id}/rating/average")]
-        public async Task<IActionResult> GetAverageRestaurantRating(Guid id)
-        {
-            var avg = await _cassandra.GetAverageRating(id);
-
-            if (avg == null)
-                return Ok(0);
-
-            return Ok(avg);
-        }
-
-        [HttpGet("restaurants/{id}/ratingscount")]
-        public async Task<IActionResult> GetRestaurantsRatingsCount(Guid id)
-        {
-            var count = await _cassandra.GetRestaurantRatingsCount(id);
-            return Ok(new { RestaurantId = id, RatingsCount = count });
         }
 
         //-----------------------------------------------------------------------------------
@@ -296,13 +245,6 @@ namespace TastyTrails.Controllers
             return Ok(user);
         }
 
-        [HttpGet("restaurants/nearme")]
-        public async Task<IActionResult> GetRestaurantsNearMe([FromQuery]double lat, [FromQuery] double lng, [FromQuery]double radius=0.01)
-        {
-            var r = await _mongo.GetRestaurantsNearMe(lat, lng, radius);
-            return Ok(r);
-        }
-
         //-----------------------------------------------------------------------
         [HttpGet("users/search")] // Path: /api/get/users/search
         public async Task<IActionResult> SearchUsers([FromQuery] string username)
@@ -313,23 +255,6 @@ namespace TastyTrails.Controllers
             var results = await _mongo.SearchUsersAsync(username);
             return Ok(results);
         }
-
-        //-----------users--------------------------------------------------------
-        [HttpGet("get/user/{id}")]
-        public async Task<IActionResult> GetUser(string id)
-        {
-            var user = await _neo4jService.GetUserByIdAsync(id);
-            return user != null ? Ok(user) : NotFound("Korisnik nije pronađen.");
-        }
-
-        //--------------------------------------------------------------------------
-        [HttpGet("user/{userId}/likes")]
-        public async Task<IActionResult> GetLikes(string userId)
-        {
-            var likes = await _neo4jService.GetUserLikesAsync(userId);
-            return Ok(likes);
-        }
-
 
         //----------------------------------------------------------------------------
         [HttpGet("reviews/{userId}")]

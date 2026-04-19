@@ -260,9 +260,9 @@ namespace TastyTrails.Services
             {
                 restaurant.AverageRating =
                     (double)restaurant.TrendingScore / restaurant.TotalReviews;
-    }
+            }
 
-    await Restaurants.ReplaceOneAsync(r => r.Id == restaurantId, restaurant);
+            await Restaurants.ReplaceOneAsync(r => r.Id == restaurantId, restaurant);
         }
 
         public async Task<MongoRestaurant> GetRestaurantByReviewId(Guid reviewId)
@@ -281,34 +281,18 @@ namespace TastyTrails.Services
 
         public async Task<List<MongoUser>> SearchUsersAsync(string username)
         {
-            // Koristimo Regex za delimično poklapanje, "i" opcija za case-insensitive
             var filter = Builders<MongoUser>.Filter.Regex(u => u.Username, new BsonRegularExpression(username, "i"));
 
-            // Pretražujemo Users kolekciju koju si definisao gore u konstruktoru
             return await Users
                 .Find(filter)
                 .Project<MongoUser>(Builders<MongoUser>.Projection
                     .Include(u => u.Id)
                     .Include(u => u.Username)
-                    .Include(u => u.Email)) // Možeš dodati polja koja su ti bitna za search
+                    .Include(u => u.Email)) 
                 .Limit(10)
                 .ToListAsync();
         }
-        public async Task<bool> UpdateUsernameOrEmail(Guid id, UpdateDTO dto)
-        {
-            var update = Builders<MongoUser>.Update.Set(u => u.Email, dto.Email)
-                                                   .Set(u => u.Username, dto.Username);
-            var res = await Users.UpdateOneAsync(u => u.Id == id, update);
-            return res.ModifiedCount > 0;
-        }
 
-        public async Task<bool> DeleteUser(Guid id)
-        {
-            var res = await Users.DeleteOneAsync(u => u.Id == id);
-            return res.DeletedCount > 0;
-        }
-
-    
         public async Task<Guid> PostUserSavedRestaurnts(Guid userId, Guid restaurantId)
         {
             var filter = Builders<MongoUser>.Filter.Eq(u => u.Id, userId);
@@ -370,53 +354,12 @@ namespace TastyTrails.Services
             await Users.UpdateOneAsync(u => u.Id == targetId, updateTarget);
         }
 
-        public async Task<bool> UpdateReviewAsync(string reviewId, int newRating, string newComment)
-        {
-            // 1. Provera validnosti stringa
-            if (string.IsNullOrEmpty(reviewId)) return false;
-
-            // 2. Filter - pošto tvoj model kaže BsonType.String, 
-            // MongoDB driver očekuje da porediš sa Guid objektom koji on interno mapira u string
-            if (!Guid.TryParse(reviewId, out Guid guidId)) return false;
-
-            var filter = Builders<MongoReview>.Filter.Eq(r => r.Id, guidId);
-
-            // 3. Update operacija
-            var update = Builders<MongoReview>.Update
-                .Set(r => r.Rating, newRating)
-                .Set(r => r.Comment, newComment)
-                .Set(r => r.UpdatedAt, DateTime.UtcNow);
-
-            var result = await Reviews.UpdateOneAsync(filter, update);
-
-            return result.MatchedCount > 0; // Bolje MatchedCount jer ModifiedCount može biti 0 ako ništa nisi promenio
-        }
-
-        public async Task<bool> DeleteReviewAsync(string reviewId)
-        {
-            if (!Guid.TryParse(reviewId, out Guid guidId))
-            {
-                return false;
-            }
-
-            // Filter traži recenziju sa tim Guid-om
-            var filter = Builders<MongoReview>.Filter.Eq(r => r.Id, guidId);
-
-            // Brisanje iz kolekcije "reviews"
-            var result = await Reviews.DeleteOneAsync(filter);
-
-            // Vraća true ako je barem jedan dokument obrisan
-            return result.DeletedCount > 0;
-        }
-
         public async Task<List<UserPreviewModel>> GetFollowDetailsAsync(Guid userId, string type)
         {
-            // 1. Dohvati korisnika iz kolekcije
             var user = await Users.Find(u => u.Id == userId).FirstOrDefaultAsync();
 
             if (user == null) return new List<UserPreviewModel>();
 
-            // 2. Odaberi pravi niz (Following ili Followers)
             List<Guid> targetIds = type.ToLower() == "followers"
                 ? user.Followers
                 : user.Following;
@@ -424,12 +367,9 @@ namespace TastyTrails.Services
             if (targetIds == null || targetIds.Count == 0)
                 return new List<UserPreviewModel>();
 
-            // 3. Pronađi sve te korisnike u bazi
-            // Pošto su u bazi Guid-ovi (čak i ako su sačuvani kao stringovi, drajver će ih mapirati)
             var filter = Builders<MongoUser>.Filter.In(u => u.Id, targetIds);
             var usersFromDb = await Users.Find(filter).ToListAsync();
 
-            // 4. Mapiranje na UserPreviewModel
             return usersFromDb.Select(u => new UserPreviewModel
             {
                 Id = u.Id,

@@ -33,7 +33,7 @@ namespace TastyTrails.Services
         
         public async Task<object> Login(LoginDto dto)
         {
-            var user = await _users // _users ovde postoji u servisu
+            var user = await _users 
                 .Find(u => u.Email == dto.Email)
                 .FirstOrDefaultAsync();
 
@@ -47,7 +47,6 @@ namespace TastyTrails.Services
 
             var token = GenerateToken(user);
 
-            // VRATI OBJEKAT KOJI SADRŽI OBA PODATKA
             return new
             {
                 Token = token,

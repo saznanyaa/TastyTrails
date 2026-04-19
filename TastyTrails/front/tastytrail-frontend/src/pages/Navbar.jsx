@@ -1,4 +1,4 @@
-﻿import { Link, useNavigate } from "react-router-dom"; // Dodali smo useNavigate
+﻿import { Link, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 
 const styles = {
@@ -46,7 +46,6 @@ export default function Navbar() {
     const navigate = useNavigate();
 
     useEffect(() => {
-        // Proveravamo podatke svaki put kad se Navbar učita
         const token = localStorage.getItem("authToken");
         const storedUserId = localStorage.getItem("userId");
 
@@ -57,11 +56,11 @@ export default function Navbar() {
     const handleLogout = () => {
         localStorage.removeItem("authToken");
         localStorage.removeItem("userId");
-        localStorage.removeItem("username"); // Brišemo i potencijalno ime
+        localStorage.removeItem("username");
         setUserToken(null);
         setUserId(null);
         navigate("/home");
-        window.location.reload(); // Osvežavamo da aplikacija "shvati" da smo izašli
+        window.location.reload();
     };
 
     return (
@@ -74,7 +73,6 @@ export default function Navbar() {
                 <Link to="/home" style={styles.link}>Home</Link>
                 <Link to="/explore" style={styles.link}>Explore</Link>
 
-                {/* Dinamički link za profil */}
                 {userToken && userId ? (
                     <Link to={`/profile/${userId}`} style={styles.link}>Profile</Link>
                 ) : (

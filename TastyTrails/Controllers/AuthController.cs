@@ -22,7 +22,6 @@ namespace TastyTrails.Controllers
         {
             try
             {
-                // 'authResult' će sada biti onaj objekat koji sadrži Token i UserId
                 var authResult = await _authService.Login(dto);
 
                 return Ok(authResult);
